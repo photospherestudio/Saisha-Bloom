@@ -24,8 +24,9 @@ button { cursor: pointer; }
 .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
 .site-header { padding: 22px 0; }
 .header-inner { display: flex; align-items: center; justify-content: space-between; }
+.header-actions { display: flex; align-items: center; gap: 16px; }
 .wordmark { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -.03em; font-size: 1.12rem; }
-.wordmark-mark { display: grid; place-items: center; width: 25px; height: 25px; color: var(--sunbeam); font-size: 1.3rem; }
+.wordmark-mark { display: block; width: 28px; height: 28px; object-fit: contain; }
 .header-link, .header-back { color: var(--moss); font-size: .88rem; font-weight: 700; }
 .header-back::before { content: '← '; }
 

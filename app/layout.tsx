@@ -4,7 +4,7 @@ import { hasClerkConfig } from '@/lib/auth';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Milestones — a gentler way to notice growth',
+  title: 'Saisha Bloom — a gentler way to notice growth',
   description: 'A calm milestone tracker for growing families.',
 };
 
