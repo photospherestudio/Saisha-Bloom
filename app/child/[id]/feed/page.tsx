@@ -5,12 +5,14 @@ import { WeeklyFeed } from '@/components/WeeklyFeed';
 import { WeeklyProgress } from '@/components/WeeklyProgress';
 import { getChild } from '@/lib/queries';
 import type { MilestoneStatus } from '@/lib/types';
+import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function WeeklyFeedPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const child = await getChild(id);
+  if (!child) notFound();
   const statuses = Object.fromEntries(child.milestones.flatMap((item) => item.response ? [[item.id, item.response.status]] : [])) as Record<string, MilestoneStatus>;
 
   return (

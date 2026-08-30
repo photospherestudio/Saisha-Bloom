@@ -8,12 +8,18 @@ generator client {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  clerkId   String?   @unique
-  email     String    @unique
-  timezone  String?
-  createdAt DateTime  @default(now())
-  children  Child[]
+  id                  String               @id @default(cuid())
+  clerkId             String?              @unique
+  supabaseUserId      String?              @unique
+  email               String               @unique
+  timezone            String?
+  createdAt           DateTime             @default(now())
+  children            Child[]
+  memberships         ChildMember[]
+  sentInvites         ChildInvite[]        @relation("InviteSender")
+  responses           MilestoneResponse[]  @relation("ResponseAuthor")
+  reminderPreferences ReminderPreference[]
+  reminderDeliveries  ReminderDelivery[]
 }
 
 model Child {
@@ -28,6 +34,10 @@ model Child {
   weightKg         Float?
   createdAt        DateTime            @default(now())
   responses        MilestoneResponse[]
+  members          ChildMember[]
+  invites          ChildInvite[]
+  reminderPreferences ReminderPreference[]
+  reminderDeliveries  ReminderDelivery[]
 }
 
 model Milestone {
@@ -48,11 +58,90 @@ model MilestoneResponse {
   child       Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
   milestoneId String
   milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  userId      String
+  author      User      @relation("ResponseAuthor", fields: [userId], references: [id], onDelete: Restrict)
   status      String
   note        String?
   createdAt   DateTime  @default(now())
+  media       MilestoneResponseMedia[]
 
   @@index([childId, milestoneId, createdAt])
+  @@index([childId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model MilestoneResponseMedia {
+  id         String            @id @default(cuid())
+  responseId String
+  response   MilestoneResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  objectPath String            @unique
+  mimeType   String
+  sizeBytes  Int
+  createdAt  DateTime          @default(now())
+
+  @@index([responseId, createdAt])
+}
+
+model ChildMember {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("editor")
+  invitedBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([childId, userId])
+  @@index([userId, createdAt])
+}
+
+model ChildInvite {
+  id        String    @id @default(cuid())
+  childId   String
+  child     Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  email     String
+  tokenHash String    @unique
+  invitedBy String
+  sender    User      @relation("InviteSender", fields: [invitedBy], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  acceptedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([childId, email])
+  @@index([email, expiresAt])
+}
+
+model ReminderPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, childId])
+  @@index([enabled, updatedAt])
+}
+
+model ReminderDelivery {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  checkpoint  Int
+  status      String   @default("pending")
+  providerId  String?
+  error       String?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, childId, checkpoint])
+  @@index([status, createdAt])
 }
 
 model Recommendation {

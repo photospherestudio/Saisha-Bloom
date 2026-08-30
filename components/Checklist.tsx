@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { saveMilestoneResponse } from '@/lib/actions';
-import { AGE_BANDS, childAgeInMonths, currentAgeBand, DOMAIN_LABELS, milestoneAgeLabel, milestoneTitleForGender, MONTHS_FROM_YEAR, sourceCheckpointForMonth } from '@/lib/demo-data';
+import { AGE_BANDS, currentAgeBand, DOMAIN_LABELS, milestoneAgeLabel, milestoneTitleForGender, MONTHS_FROM_YEAR, sourceCheckpointForMonth } from '@/lib/demo-data';
 import { getRecommendation } from '@/lib/recommendation';
 import { emptyWeeklyProgress, type WeeklyProgress as WeeklyProgressData } from '@/lib/weekly-progress';
 import type { ChildWithMilestones, MilestoneStatus } from '@/lib/types';
@@ -11,6 +10,8 @@ import { Bloom } from './Bloom';
 import { ActivityIllustration } from './ActivityIllustration';
 import { WeeklyFeed } from './WeeklyFeed';
 import { WeeklyProgress } from './WeeklyProgress';
+import { ObservationComposer } from './ObservationComposer';
+import { ageDisplay, asFamilyChild } from './saisha-ui';
 
 const statuses: MilestoneStatus[] = ['yes', 'almost', 'not_yet'];
 
@@ -40,12 +41,13 @@ function adaptiveAgeFor(
 }
 
 export function Checklist({ child }: { child: ChildWithMilestones }) {
-  const age = childAgeInMonths(child.dob);
+  const familyChild = asFamilyChild(child);
+  const { chronological, corrected, adjusted } = ageDisplay(familyChild);
+  const age = corrected;
   const [selectedStatuses, setSelectedStatuses] = useState<Record<string, MilestoneStatus>>(
     () => Object.fromEntries(child.milestones.flatMap((item) => item.response ? [[item.id, item.response.status]] : [])),
   );
   const [selected, setSelected] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
   const [selectedDomain, setSelectedDomain] = useState('movement_physical');
   const [selectedAge, setSelectedAge] = useState<number>(() => adaptiveAgeFor(child.milestones, currentAgeBand(age), 'movement_physical', Object.fromEntries(child.milestones.flatMap((item) => item.response ? [[item.id, item.response.status]] : []))));
   const [advanceNotice, setAdvanceNotice] = useState<string | null>(null);
@@ -67,18 +69,20 @@ export function Checklist({ child }: { child: ChildWithMilestones }) {
     const nextStatuses = { ...selectedStatuses, [milestoneId]: status };
     setSelectedStatuses(nextStatuses);
     setSelected(milestoneId);
-    if (!weekTouched.has(milestoneId)) {
-      setWeekTouched((current) => new Set(current).add(milestoneId));
-      setWeekProgress((current) => ({ ...current, total: current.total + 1, yes: current.yes + (status === 'yes' ? 1 : 0), almost: current.almost + (status === 'almost' ? 1 : 0), notYet: current.notYet + (status === 'not_yet' ? 1 : 0) }));
-    }
     const nextAge = adaptiveAgeFor(child.milestones, selectedAge, selectedDomain, nextStatuses);
     if (nextAge !== selectedAge) {
       setSelectedAge(nextAge);
       setSelected(null);
       setAdvanceNotice(`Your answers moved this path forward to ${nextAge} months.`);
     }
-    if (child.id === 'demo') return;
-    startTransition(() => { void saveMilestoneResponse({ childId: child.id, milestoneId, status }); });
+  }
+
+  function recordSaved(milestoneId: string) {
+    if (weekTouched.has(milestoneId)) return;
+    const status = selectedStatuses[milestoneId];
+    if (!status) return;
+    setWeekTouched((current) => new Set(current).add(milestoneId));
+    setWeekProgress((current) => ({ ...current, total: current.total + 1, yes: current.yes + (status === 'yes' ? 1 : 0), almost: current.almost + (status === 'almost' ? 1 : 0), notYet: current.notYet + (status === 'not_yet' ? 1 : 0) }));
   }
 
   return (
@@ -89,7 +93,7 @@ export function Checklist({ child }: { child: ChildWithMilestones }) {
             <div className="checklist-title"><ActivityIllustration domain={selectedDomain} variant="compact" /><h2>Milestone checklist</h2></div>
             <p className="muted" style={{ margin: '7px 0 0', fontSize: '.82rem' }}>Choose what feels closest today. You can change it anytime.</p>
           </div>
-          <span className="mono muted">{age.toFixed(1)} mo</span>
+          <div className="age-stack"><span className="mono muted">{adjusted ? `${age.toFixed(1)} mo adjusted` : `${chronological.toFixed(1)} mo`}</span><span className="muted">{adjusted ? `${chronological.toFixed(1)} mo chronological` : 'Chronological age'}</span></div>
         </div>
         <div className="filter-block">
           <div className="filter-label">Age band</div>
@@ -121,12 +125,13 @@ export function Checklist({ child }: { child: ChildWithMilestones }) {
                       <p>{recommendation.activityText}</p>
                       <p>{recommendation.tipText}</p>
                       <Link className="source-link" href={`/child/${child.id}/milestone/${milestone.id}`} style={{ display: 'inline-block', marginTop: 12 }}>Open milestone detail ↗</Link>
+                      <ObservationComposer childId={child.id} milestoneId={milestone.id} status={status ?? 'not_yet'} demoMode={child.id === 'demo'} onSaved={() => recordSaved(milestone.id)} />
                     </div>
                   ) : null}
                 </div>
                 <div className="status-buttons" aria-label={`Status for ${milestone.title}`}>
                   {statuses.map((option) => (
-                    <button key={option} className={`status-button ${option} ${status === option ? 'active' : ''}`} type="button" onClick={() => mark(milestone.id, option)} disabled={isPending} aria-label={option === 'not_yet' ? 'Not yet' : option}>
+                    <button key={option} className={`status-button ${option} ${status === option ? 'active' : ''}`} type="button" onClick={() => mark(milestone.id, option)} aria-label={option === 'not_yet' ? 'Not yet' : option}>
                       {option === 'not_yet' ? 'NY' : option[0].toUpperCase()}
                     </button>
                   ))}

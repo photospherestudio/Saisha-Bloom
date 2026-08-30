@@ -17,8 +17,19 @@ export async function getCurrentAppUser(email?: string) {
   if (hasSupabaseConfig()) {
     const authUser = await getCurrentAuthUser();
     const authEmail = authUser?.email?.toLowerCase();
-    if (!authEmail) return null;
-    return db.user.upsert({ where: { email: authEmail }, update: {}, create: { email: authEmail } });
+    const supabaseUserId = authUser?.id;
+    if (!authEmail || !supabaseUserId) return null;
+    const byAuthId = await db.user.findUnique({ where: { supabaseUserId } });
+    if (byAuthId) {
+      if (byAuthId.email !== authEmail) return db.user.update({ where: { id: byAuthId.id }, data: { email: authEmail } });
+      return byAuthId;
+    }
+    const byEmail = await db.user.findUnique({ where: { email: authEmail } });
+    if (byEmail) {
+      if (byEmail.supabaseUserId && byEmail.supabaseUserId !== supabaseUserId) return null;
+      return db.user.update({ where: { id: byEmail.id }, data: { supabaseUserId } });
+    }
+    return db.user.create({ data: { email: authEmail, supabaseUserId } });
   }
 
   const cookieStore = await cookies();

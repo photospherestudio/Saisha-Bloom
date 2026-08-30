@@ -1,80 +1,117 @@
 import { db } from './db';
-import { getCurrentAppUser } from './auth';
-import { childAgeInMonths, demoChild, demoMilestones } from './demo-data';
+import { getCurrentAppUser, hasSupabaseConfig } from './auth';
+import { childAge, cdcCheckpointForAge } from './age';
+import { demoChild, demoMilestones } from './demo-data';
+import { createAdminClient, hasSupabaseAdminConfig } from './supabase/admin';
 import { startOfWeek, summarizeWeeklyProgress } from './weekly-progress';
-import type { ChildWithMilestones, Guidance, Milestone, MilestoneStatus } from './types';
+import type { AccessibleChild, ChildWithMilestones, Guidance, Milestone, MilestoneStatus, ObservationMedia, TimelineObservation } from './types';
+
+export class ChildAccessError extends Error {
+  constructor() {
+    super('Child profile not found.');
+  }
+}
+
+type MediaRecord = { id: string; objectPath: string; mimeType: string; sizeBytes: number; createdAt: Date };
+
+async function signedMedia(media: MediaRecord[]): Promise<ObservationMedia[]> {
+  if (!media.length || !hasSupabaseAdminConfig()) return media.map((item) => ({ ...item, createdAt: item.createdAt.toISOString(), signedUrl: null }));
+  const admin = createAdminClient();
+  return Promise.all(media.map(async (item) => {
+    const { data } = await admin.storage.from(process.env.SUPABASE_IMAGE_BUCKET ?? 'milestone-memories').createSignedUrl(item.objectPath, 3600);
+    return { ...item, createdAt: item.createdAt.toISOString(), signedUrl: data?.signedUrl ?? null };
+  }));
+}
 
 function toMilestone(item: {
-  id: string;
-  title: string;
-  domain: string;
-  ageRangeMinMonths: number;
-  ageRangeMaxMonths: number;
-  source: string;
-  sourceUrl: string;
-  responses: { status: string; createdAt: Date }[];
+  id: string; title: string; domain: string; ageRangeMinMonths: number; ageRangeMaxMonths: number; source: string; sourceUrl: string;
+  responses: { id: string; status: string; note: string | null; createdAt: Date; author: { id: string; email: string }; media: MediaRecord[] }[];
 }): Milestone {
   const response = item.responses[0];
   return {
-    id: item.id,
-    title: item.title,
-    domain: item.domain,
-    ageRangeMinMonths: item.ageRangeMinMonths,
-    ageRangeMaxMonths: item.ageRangeMaxMonths,
-    source: item.source,
-    sourceUrl: item.sourceUrl,
-    response: response ? { status: response.status as MilestoneStatus, createdAt: response.createdAt.toISOString() } : null,
+    id: item.id, title: item.title, domain: item.domain, ageRangeMinMonths: item.ageRangeMinMonths, ageRangeMaxMonths: item.ageRangeMaxMonths, source: item.source, sourceUrl: item.sourceUrl,
+    response: response ? { id: response.id, status: response.status as MilestoneStatus, note: response.note, createdAt: response.createdAt.toISOString(), author: response.author, media: response.media.map((media) => ({ ...media, createdAt: media.createdAt.toISOString(), signedUrl: null })) } : null,
   };
 }
 
-function toGuidance(item: {
-  id: string;
-  externalId: string;
-  title: string;
-  summary: string;
-  domain: string;
-  ageRangeMinMonths: number;
-  ageRangeMaxMonths: number;
-  kind: string;
-  sourceKey: string;
-  sourceName: string;
-  sourceUrl: string;
-  reviewedAt: Date;
-}): Guidance {
+function toGuidance(item: { id: string; externalId: string; title: string; summary: string; domain: string; ageRangeMinMonths: number; ageRangeMaxMonths: number; kind: string; sourceKey: string; sourceName: string; sourceUrl: string; reviewedAt: Date }): Guidance {
   return { ...item, kind: item.kind as Guidance['kind'], reviewedAt: item.reviewedAt.toISOString() };
 }
 
-export async function getChild(id?: string): Promise<ChildWithMilestones> {
+export async function listAccessibleChildren(): Promise<AccessibleChild[]> {
+  const user = await getCurrentAppUser();
+  if (!user) return [];
+  const children = await db.child.findMany({
+    where: { OR: [{ userId: user.id }, { members: { some: { userId: user.id, role: 'editor' } } }] },
+    select: { id: true, name: true, dob: true, gender: true, userId: true },
+    orderBy: [{ createdAt: 'asc' }],
+  });
+  return children.map((child) => ({ id: child.id, name: child.name, dob: child.dob.toISOString(), gender: child.gender as AccessibleChild['gender'], relationship: child.userId === user.id ? 'owner' : 'editor' }));
+}
+
+export async function requireChildAccess(childId: string, _access: 'read' | 'write' = 'read') {
+  const user = await getCurrentAppUser();
+  if (!user) throw new ChildAccessError();
+  const child = await db.child.findFirst({
+    where: { id: childId, OR: [{ userId: user.id }, { members: { some: { userId: user.id, role: 'editor' } } }] },
+  });
+  if (!child) throw new ChildAccessError();
+  return { child, user, relationship: child.userId === user.id ? 'owner' as const : 'editor' as const };
+}
+
+export async function requireChildOwner(childId: string) {
+  const access = await requireChildAccess(childId, 'write');
+  if (access.relationship !== 'owner') throw new ChildAccessError();
+  return access;
+}
+
+export async function getChild(id?: string): Promise<ChildWithMilestones | null> {
   if (id === 'demo') return demoChild;
+  if (!hasSupabaseConfig() && !id) return null;
 
-  try {
-    const user = await getCurrentAppUser();
-    const activeChildId = id ?? (user ? (await db.child.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' } }))?.id : undefined);
-    const child = user && activeChildId
-      ? await db.child.findFirst({ where: { id: activeChildId, userId: user.id } })
-      : null;
-    if (!child) return demoChild;
-
-    const milestones = await db.milestone.findMany({
-      where: {
-        source: 'CDC Learn the Signs. Act Early.',
-        domain: { in: ['social_emotional', 'language_communication', 'cognitive', 'movement_physical'] },
-        ageRangeMinMonths: { lte: 48 },
-        ageRangeMaxMonths: { gte: 2 },
-      },
-      orderBy: [{ ageRangeMinMonths: 'asc' }, { title: 'asc' }],
-      include: { responses: { where: { childId: child.id }, orderBy: { createdAt: 'desc' }, take: 1 } },
-    });
-    const guidanceAge = Math.min(48, Math.max(0, Math.round(childAgeInMonths(child.dob.toISOString()))));
-    const guidance = await db.guidance.findMany({
-      where: { ageRangeMinMonths: { lte: guidanceAge }, ageRangeMaxMonths: { gte: guidanceAge } },
-      orderBy: [{ kind: 'asc' }, { ageRangeMinMonths: 'asc' }, { externalId: 'asc' }],
-    });
-    const weeklyResponses = await db.milestoneResponse.findMany({ where: { childId: child.id, createdAt: { gte: startOfWeek() } }, select: { status: true } });
-    return { id: child.id, name: child.name, dob: child.dob.toISOString(), gender: child.gender as ChildWithMilestones['gender'], heightCm: child.heightCm, weightKg: child.weightKg, milestones: milestones.map(toMilestone), guidance: guidance.map(toGuidance), weeklyProgress: summarizeWeeklyProgress(weeklyResponses.map((item) => item.status)) };
-  } catch {
-    return demoChild;
+  const user = await getCurrentAppUser();
+  if (!user) {
+    return null;
   }
+  const activeChildId = id ?? (await listAccessibleChildren())[0]?.id;
+  if (!activeChildId) return null;
+  let access;
+  try {
+    access = await requireChildAccess(activeChildId);
+  } catch (error) {
+    if (error instanceof ChildAccessError) return null;
+    throw error;
+  }
+  const { child } = access;
+  const age = childAge(child.dob, child.gestationalWeeks);
+  const milestones = await db.milestone.findMany({
+    where: { source: 'CDC Learn the Signs. Act Early.', domain: { in: ['social_emotional', 'language_communication', 'cognitive', 'movement_physical'] }, ageRangeMinMonths: { lte: 48 }, ageRangeMaxMonths: { gte: 2 } },
+    orderBy: [{ ageRangeMinMonths: 'asc' }, { title: 'asc' }],
+    include: { responses: { where: { childId: child.id }, orderBy: { createdAt: 'desc' }, take: 1, include: { author: { select: { id: true, email: true } }, media: { orderBy: { createdAt: 'asc' } } } } },
+  });
+  const guidanceAge = Math.min(48, Math.max(0, Math.round(age.activeAgeInMonths)));
+  const [guidance, weeklyResponses] = await Promise.all([
+    db.guidance.findMany({ where: { ageRangeMinMonths: { lte: guidanceAge }, ageRangeMaxMonths: { gte: guidanceAge } }, orderBy: [{ kind: 'asc' }, { ageRangeMinMonths: 'asc' }, { externalId: 'asc' }] }),
+    db.milestoneResponse.findMany({ where: { childId: child.id, createdAt: { gte: startOfWeek() } }, select: { status: true } }),
+  ]);
+  const [accessibleChildren, reminderPreference, family] = await Promise.all([
+    listAccessibleChildren(),
+    db.reminderPreference.findUnique({ where: { userId_childId: { userId: user.id, childId: child.id } }, select: { enabled: true, user: { select: { email: true } } } }),
+    db.child.findUnique({ where: { id: child.id }, select: { members: { orderBy: { createdAt: 'asc' }, select: { id: true, createdAt: true, user: { select: { email: true } } } }, invites: { where: { acceptedAt: null, revokedAt: null }, orderBy: { createdAt: 'desc' }, select: { id: true, email: true, expiresAt: true } } } }),
+  ]);
+  return { id: child.id, name: child.name, dob: child.dob.toISOString(), gender: child.gender as ChildWithMilestones['gender'], gestationalWeeks: child.gestationalWeeks, heightCm: child.heightCm, weightKg: child.weightKg, age, milestones: milestones.map(toMilestone), guidance: guidance.map(toGuidance), weeklyProgress: summarizeWeeklyProgress(weeklyResponses.map((item) => item.status)), accessibleChildren, reminderPreference: reminderPreference ? { enabled: reminderPreference.enabled, email: reminderPreference.user.email } : null, relationship: child.userId === user.id ? 'owner' : 'editor', familyMembers: family?.members.map((member) => ({ id: member.id, email: member.user.email, createdAt: member.createdAt.toISOString() })) ?? [], pendingInvites: family?.invites.map((invite) => ({ id: invite.id, email: invite.email, expiresAt: invite.expiresAt.toISOString() })) ?? [] };
+}
+
+export async function getTimelineObservations(childId: string): Promise<TimelineObservation[]> {
+  if (childId === 'demo') return [];
+  await requireChildAccess(childId);
+  const responses = await db.milestoneResponse.findMany({
+    where: { childId }, orderBy: { createdAt: 'desc' },
+    include: { author: { select: { id: true, email: true } }, milestone: { select: { id: true, title: true, domain: true, source: true, sourceUrl: true } }, media: { orderBy: { createdAt: 'asc' } } },
+  });
+  return Promise.all(responses.map(async (item) => ({
+    id: item.id, status: item.status as MilestoneStatus, note: item.note, createdAt: item.createdAt.toISOString(), author: item.author, milestone: item.milestone, media: await signedMedia(item.media),
+  })));
 }
 
 export function progressFor(child: ChildWithMilestones) {
@@ -86,3 +123,5 @@ export function progressFor(child: ChildWithMilestones) {
 export function milestonesForDemoWithResponses(statuses: Record<string, MilestoneStatus>) {
   return demoMilestones.map((item) => ({ ...item, response: statuses[item.id] ? { status: statuses[item.id], createdAt: new Date().toISOString() } : null }));
 }
+
+export { cdcCheckpointForAge };

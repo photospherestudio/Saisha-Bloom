@@ -4,19 +4,21 @@ import { notFound } from 'next/navigation';
 import { AppHeader } from '@/components/AppHeader';
 import { Bloom } from '@/components/Bloom';
 import { activityIllustrationSrc } from '@/components/ActivityIllustration';
-import { DOMAIN_LABELS, childAgeInMonths, milestoneAgeLabel, milestoneTitleForGender } from '@/lib/demo-data';
+import { DOMAIN_LABELS, milestoneAgeLabel, milestoneTitleForGender } from '@/lib/demo-data';
 import { activityDetailsFor } from '@/lib/activity-bank';
 import { getRecommendation } from '@/lib/recommendation';
 import { getChild } from '@/lib/queries';
+import { ageDisplay, asFamilyChild } from '@/components/saisha-ui';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MilestoneDetailPage({ params }: { params: Promise<{ id: string; milestoneId: string }> }) {
   const { id, milestoneId } = await params;
   const child = await getChild(id);
+  if (!child) notFound();
   const milestone = child.milestones.find((item) => item.id === milestoneId);
   if (!milestone) notFound();
-  const age = childAgeInMonths(child.dob);
+  const { corrected: age, chronological, adjusted } = ageDisplay(asFamilyChild(child));
   const status = milestone.response?.status ?? 'not_yet';
   const recommendation = getRecommendation(milestone, status, age, child.guidance);
   const activity = activityDetailsFor(milestone, age);
@@ -32,6 +34,7 @@ export default async function MilestoneDetailPage({ params }: { params: Promise<
           <div className="detail-meta"><Bloom status={milestone.response?.status} size="large" /><span className="mono muted">{milestoneAgeLabel(milestone.ageRangeMinMonths, milestone.ageRangeMaxMonths)}</span><span className="detail-domain">{domainLabel}</span></div>
           <h1 className="display">{milestoneTitleForGender(milestone.title, child.gender)}</h1>
           <p className="detail-copy">Every child’s path has its own rhythm. This guidepost is here to help you notice what is unfolding and find a playful next step.</p>
+          <div className="citation-card"><div className="eyebrow">Reviewed guidepost</div><p><strong>{milestone.source}</strong></p>{milestone.sourceUrl ? <a className="source-link" href={milestone.sourceUrl} target="_blank" rel="noreferrer">Read source guidance ↗</a> : <p className="muted">Source link not available for this guidepost.</p>}<p className="muted">Path uses {adjusted ? `${age.toFixed(1)} months adjusted age` : `${chronological.toFixed(1)} months chronological age`} for context.</p></div>
           <div className={`recommendation ${recommendation.tone === 'reassure' ? 'reassure' : ''} ${recommendation.tone === 'mention' ? 'mention' : ''}`}>
             <div className="rec-label">{recommendation.tone === 'celebrate' ? 'Noticed' : 'A next little step'}</div>
             <h3>{recommendation.heading}</h3><p>{recommendation.tipText}</p>

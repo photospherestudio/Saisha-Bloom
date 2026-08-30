@@ -5,9 +5,11 @@ import { buildWeeklyFeed } from '@/lib/weekly-feed';
 import { DOMAIN_LABELS, milestoneTitleForGender } from '@/lib/demo-data';
 import type { ChildWithMilestones, MilestoneStatus } from '@/lib/types';
 import { ActivityIllustration } from './ActivityIllustration';
+import { ageDisplay, asFamilyChild } from './saisha-ui';
 
 export function WeeklyFeed({ child, statuses = {} }: { child: ChildWithMilestones; statuses?: Record<string, MilestoneStatus> }) {
-  const items = buildWeeklyFeed(child.milestones, (Date.now() - new Date(child.dob).getTime()) / (1000 * 60 * 60 * 24 * 30.4375), statuses, child.guidance);
+  const { corrected } = ageDisplay(asFamilyChild(child));
+  const items = buildWeeklyFeed(child.milestones, corrected, statuses, child.guidance);
   return (
     <section className="feed-panel">
       <div className="eyebrow">Personalized for this week</div>
