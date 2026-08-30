@@ -1,0 +1,10 @@
+node_modules
+.next
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+output
+.playwright-cli
+supabase/.branches
+supabase/.temp

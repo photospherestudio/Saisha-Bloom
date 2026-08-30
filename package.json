@@ -1,0 +1,38 @@
+{
+  "name": "milestones",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status"
+  },
+  "prisma": {
+    "seed": "node --experimental-strip-types prisma/seed-milestones.ts"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^7.8.3",
+    "@prisma/client": "6.19.3",
+    "next": "15.5.24",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "autoprefixer": "10.5.4",
+    "cheerio": "^1.2.0",
+    "postcss": "8.5.26",
+    "prisma": "6.19.3",
+    "tailwindcss": "3.4.19",
+    "typescript": "5.9.3"
+  }
+}

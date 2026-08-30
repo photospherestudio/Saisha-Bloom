@@ -1,0 +1,84 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  clerkId   String?   @unique
+  email     String    @unique
+  timezone  String?
+  createdAt DateTime  @default(now())
+  children  Child[]
+}
+
+model Child {
+  id               String              @id @default(cuid())
+  userId           String
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  dob              DateTime
+  gender           String?
+  gestationalWeeks Int?
+  heightCm         Float?
+  weightKg         Float?
+  createdAt        DateTime            @default(now())
+  responses        MilestoneResponse[]
+}
+
+model Milestone {
+  id               String              @id @default(cuid())
+  title            String
+  domain           String
+  ageRangeMinMonths Float
+  ageRangeMaxMonths Float
+  source           String
+  sourceUrl        String
+  responses        MilestoneResponse[]
+  recommendations  Recommendation[]
+}
+
+model MilestoneResponse {
+  id          String    @id @default(cuid())
+  childId     String
+  child       Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  milestoneId String
+  milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  status      String
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  @@index([childId, milestoneId, createdAt])
+}
+
+model Recommendation {
+  id               String    @id @default(cuid())
+  milestoneId      String
+  milestone        Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  triggerStatus    String
+  activityText     String
+  tipText          String
+  illustrationSlug String
+}
+
+model Guidance {
+  id                 String   @id @default(cuid())
+  externalId         String   @unique
+  title              String
+  summary            String
+  domain             String
+  ageRangeMinMonths  Int
+  ageRangeMaxMonths  Int
+  kind               String
+  sourceKey          String
+  sourceName         String
+  sourceUrl          String
+  reviewedAt         DateTime
+
+  @@index([ageRangeMinMonths, ageRangeMaxMonths, domain])
+  @@index([kind, ageRangeMinMonths, ageRangeMaxMonths])
+}

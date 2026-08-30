@@ -1,0 +1,50 @@
+{
+  "source": "WHO Multicentre Growth Reference Study Group — Motor Development Study",
+  "citation": "Acta Paediatrica Supplement, 2006;450:86-95",
+  "note": "1st/99th percentile = the WHO 'window of achievement'. Values in months. Study sample: Ghana, India, Norway, Oman, USA (n=816).",
+  "milestones": [
+    {
+      "name": "Sitting without support",
+      "domain": "Movement/Physical Development",
+      "p1_months": 3.8,
+      "median_months": 5.9,
+      "p99_months": 9.2
+    },
+    {
+      "name": "Standing with assistance",
+      "domain": "Movement/Physical Development",
+      "p1_months": 4.8,
+      "median_months": 7.4,
+      "p99_months": 11.4
+    },
+    {
+      "name": "Hands-and-knees crawling",
+      "domain": "Movement/Physical Development",
+      "p1_months": 5.2,
+      "median_months": 8.3,
+      "p99_months": 13.5,
+      "note": "4.3% of healthy children never crawl on hands and knees — not itself a red flag if other milestones are on track."
+    },
+    {
+      "name": "Walking with assistance",
+      "domain": "Movement/Physical Development",
+      "p1_months": 5.9,
+      "median_months": 9.0,
+      "p99_months": 13.7
+    },
+    {
+      "name": "Standing alone",
+      "domain": "Movement/Physical Development",
+      "p1_months": 6.9,
+      "median_months": 10.8,
+      "p99_months": 16.9
+    },
+    {
+      "name": "Walking alone",
+      "domain": "Movement/Physical Development",
+      "p1_months": 8.2,
+      "median_months": 12.0,
+      "p99_months": 17.6
+    }
+  ]
+}
