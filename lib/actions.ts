@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { db } from './db';
-import { getCurrentAppUser, hasClerkConfig } from './auth';
+import { getCurrentAppUser, hasSupabaseConfig } from './auth';
 import type { MilestoneStatus } from './types';
 
 export async function createChild(formData: FormData) {
@@ -18,7 +18,7 @@ export async function createChild(formData: FormData) {
   const weightKgValue = String(formData.get('weightKg') ?? '').trim();
   const weightKg = weightKgValue ? Number(weightKgValue) : null;
 
-  if (!email && !hasClerkConfig()) return { error: 'Add a valid email.' };
+  if (!email && !hasSupabaseConfig()) return { error: 'Add a valid email.' };
   if (!name) return { error: 'Add your child’s first name.' };
   if (!dob || Number.isNaN(new Date(dob).getTime())) return { error: 'Add a date of birth.' };
   if (!gender) return { error: 'Choose Girl or Boy so we can use the right pronouns.' };
@@ -46,6 +46,7 @@ export async function createChild(formData: FormData) {
     return { error: 'Your profile could not be saved. Check the database connection and try again.' };
   }
 }
+
 
 export async function saveMilestoneResponse(input: {
   childId: string;

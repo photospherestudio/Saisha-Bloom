@@ -1,12 +1,14 @@
-import { SignUp } from '@clerk/nextjs';
 import { AppHeader } from '@/components/AppHeader';
-import { auth } from '@clerk/nextjs/server';
-import { hasClerkConfig } from '@/lib/auth';
+import { getCurrentAuthUser, hasSupabaseConfig } from '@/lib/auth';
 import { OnboardingForm } from './OnboardingForm';
+import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 
 export default async function OnboardingPage() {
-  const clerkReady = hasClerkConfig();
-  const signedIn = clerkReady ? Boolean((await auth()).userId) : false;
+  const supabaseReady = hasSupabaseConfig();
+  const signedIn = supabaseReady ? Boolean(await getCurrentAuthUser()) : false;
+  if (supabaseReady && !signedIn) redirect('/sign-in?next=/onboarding');
   return (
     <main className="page">
       <AppHeader />
@@ -14,7 +16,7 @@ export default async function OnboardingPage() {
         <div className="eyebrow">A small beginning</div>
         <h1 className="display">Let’s make this yours.</h1>
         <p className="form-intro">Create a private profile with only what we need: a first name and date of birth. You can add corrected age details if your child arrived early.</p>
-        {clerkReady && !signedIn ? <SignUp fallbackRedirectUrl="/onboarding" signInUrl="/sign-in" /> : <OnboardingForm demoMode={!clerkReady} />}
+        <OnboardingForm demoMode={!supabaseReady} />
         <p className="legal-note">This is not a substitute for standardized developmental screening. Always share concerns with your child’s doctor.</p>
       </section>
     </main>

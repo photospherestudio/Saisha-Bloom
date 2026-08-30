@@ -24,7 +24,7 @@ export function OnboardingForm({ demoMode = false }: { demoMode?: boolean }) {
       <div className="field"><label htmlFor="gestationalWeeks">Gestational weeks <span className="muted">(optional)</span></label><input id="gestationalWeeks" name="gestationalWeeks" type="number" min="20" max="45" placeholder="40" /></div>
       <div className="field"><label htmlFor="heightCm">Current length / height <span className="muted">(optional, cm)</span></label><input id="heightCm" name="heightCm" type="number" min="30" max="140" step="0.1" placeholder="Add later if useful" /></div>
       <div className="field"><label htmlFor="weightKg">Current weight <span className="muted">(optional, kg)</span></label><input id="weightKg" name="weightKg" type="number" min="1" max="45" step="0.1" placeholder="Add later if useful" /></div>
-      <div className="form-foot"><span className="muted" style={{ fontSize: '.76rem' }}>{demoMode ? 'Demo mode — private on this device.' : 'Signed in with Clerk. Private by default.'}</span><button className="button button-primary" type="submit" disabled={isPending}>{isPending ? 'Making space…' : 'Continue'}</button></div>
+      <div className="form-foot"><span className="muted" style={{ fontSize: '.76rem' }}>{demoMode ? 'Demo mode — private on this device.' : 'Signed in with Supabase. Private by default.'}</span><button className="button button-primary" type="submit" disabled={isPending}>{isPending ? 'Making space…' : 'Continue'}</button></div>
     </form>
   );
 }

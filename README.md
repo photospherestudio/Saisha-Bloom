@@ -13,7 +13,7 @@ npm run db:seed
 npm run dev
 ```
 
-Local Supabase uses ports 54421–54429 so it can run beside other local projects. Create `.env` with `DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54422/postgres"`. Keep the Supabase URL and anon key unset until Auth is added. Optional height/weight fields use an age-only reference envelope from 12–48 months; they are not a diagnosis and do not require gender. The demo tracker works without a database at `/child/demo/checklist`.
+Local Supabase uses ports 54421–54429 so it can run beside other local projects. Create `.env` with `DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54422/postgres"`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Auth protects `/dashboard` and `/child/*`; unauthenticated users are sent to `/sign-in`. Optional height/weight fields use an age-only reference envelope from 12–48 months; they are not a diagnosis and do not require gender. The demo tracker works without a database at `/child/demo/checklist`.
 
 The supplied CDC scraper writes reviewed output to `prisma/seed-data/cdc-milestones-raw.json`. WHO data lives beside it for seed-only motor reference. CDC publishes checkpoints rather than a record for every month; the tracker exposes every month from 12–48 and labels months between checkpoints with the latest available CDC checkpoint. Responses are stored as check-ins so weekly progress can be summarized. The demo tracker works without a database at `/child/demo/checklist`.
 

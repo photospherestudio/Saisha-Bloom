@@ -1,30 +1,25 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { cookies } from 'next/headers';
 import { db } from './db';
+import { createClient } from '@/lib/supabase/server';
 
-export function hasClerkConfig() {
-  return Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY);
+export function hasSupabaseConfig() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 }
 
-async function getClerkAppUser() {
-  const { userId } = await auth();
-  if (!userId) return null;
-
-  const clerkUser = await currentUser();
-  const email = clerkUser?.primaryEmailAddress?.emailAddress?.toLowerCase();
-  if (!email) return null;
-
-  const existing = await db.user.findUnique({ where: { clerkId: userId } });
-  if (existing) return db.user.update({ where: { id: existing.id }, data: { email } });
-
-  const sameEmail = await db.user.findUnique({ where: { email } });
-  if (sameEmail) return db.user.update({ where: { id: sameEmail.id }, data: { clerkId: userId } });
-
-  return db.user.create({ data: { clerkId: userId, email } });
+export async function getCurrentAuthUser() {
+  if (!hasSupabaseConfig()) return null;
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  return error ? null : user;
 }
 
 export async function getCurrentAppUser(email?: string) {
-  if (hasClerkConfig()) return getClerkAppUser();
+  if (hasSupabaseConfig()) {
+    const authUser = await getCurrentAuthUser();
+    const authEmail = authUser?.email?.toLowerCase();
+    if (!authEmail) return null;
+    return db.user.upsert({ where: { email: authEmail }, update: {}, create: { email: authEmail } });
+  }
 
   const cookieStore = await cookies();
   const demoId = cookieStore.get('milestones-user-id')?.value;
