@@ -20,7 +20,7 @@ export function AuthForm({ mode, next }: { mode: 'sign-in' | 'sign-up'; next?: s
     const password = String(formData.get('password') ?? '');
     const result = mode === 'sign-in'
       ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+      : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
 
     if (result.error) {
       setError(result.error.message);
