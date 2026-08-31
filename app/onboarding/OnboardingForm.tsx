@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createChild } from '@/lib/actions';
 
-export function OnboardingForm({ demoMode = false }: { demoMode?: boolean }) {
+export function OnboardingForm({ demoMode = false, initialDisplayName = '' }: { demoMode?: boolean; initialDisplayName?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState('');
@@ -13,14 +13,15 @@ export function OnboardingForm({ demoMode = false }: { demoMode?: boolean }) {
     startTransition(async () => {
       setError('');
       const result = await createChild(formData);
-      if (result.childId) router.push(`/child/${result.childId}/checklist`);
-      else if (result.error) setError(result.error);
+      if ('childId' in result && result.childId) router.push(`/child/${result.childId}/checklist`);
+      else if ('error' in result) setError(`${result.error}${'correlationId' in result ? ` Reference: ${result.correlationId}` : ''}`);
     });
   }
 
   return (
     <form className="form-card" action={submit}>
       {demoMode ? <div className="field"><label htmlFor="email">Your email</label><input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required /></div> : null}
+      <div className="field"><label htmlFor="displayName">Your first name</label><input id="displayName" name="displayName" type="text" autoComplete="given-name" defaultValue={initialDisplayName} placeholder="Shown on shared observations" maxLength={80} required /></div>
       <div className="field"><label htmlFor="name">Child’s first name</label><input id="name" name="name" type="text" autoComplete="off" placeholder="A first name is enough" required /></div>
       <div className="field"><label htmlFor="dob">Date of birth</label><input id="dob" name="dob" type="date" required /></div>
       <div className="field"><label htmlFor="gender">Gender</label><select id="gender" name="gender" defaultValue="" required><option value="" disabled>Choose one</option><option value="girl">Girl (she / her)</option><option value="boy">Boy (he / him)</option></select></div>

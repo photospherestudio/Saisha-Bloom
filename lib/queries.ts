@@ -25,12 +25,12 @@ async function signedMedia(media: MediaRecord[]): Promise<ObservationMedia[]> {
 
 function toMilestone(item: {
   id: string; title: string; domain: string; ageRangeMinMonths: number; ageRangeMaxMonths: number; source: string; sourceUrl: string;
-  responses: { id: string; status: string; note: string | null; createdAt: Date; author: { id: string; email: string }; media: MediaRecord[] }[];
+  responses: { id: string; status: string; note: string | null; createdAt: Date; author: { id: string; email: string; displayName: string | null }; media: MediaRecord[] }[];
 }): Milestone {
   const response = item.responses[0];
   return {
     id: item.id, title: item.title, domain: item.domain, ageRangeMinMonths: item.ageRangeMinMonths, ageRangeMaxMonths: item.ageRangeMaxMonths, source: item.source, sourceUrl: item.sourceUrl,
-    response: response ? { id: response.id, status: response.status as MilestoneStatus, note: response.note, createdAt: response.createdAt.toISOString(), author: response.author, media: response.media.map((media) => ({ ...media, createdAt: media.createdAt.toISOString(), signedUrl: null })) } : null,
+    response: response ? { id: response.id, status: response.status as MilestoneStatus, note: response.note, createdAt: response.createdAt.toISOString(), author: { id: response.author.id, email: response.author.email, name: response.author.displayName }, media: response.media.map((media) => ({ ...media, createdAt: media.createdAt.toISOString(), signedUrl: null })) } : null,
   };
 }
 
@@ -87,7 +87,7 @@ export async function getChild(id?: string): Promise<ChildWithMilestones | null>
   const milestones = await db.milestone.findMany({
     where: { source: 'CDC Learn the Signs. Act Early.', domain: { in: ['social_emotional', 'language_communication', 'cognitive', 'movement_physical'] }, ageRangeMinMonths: { lte: 48 }, ageRangeMaxMonths: { gte: 2 } },
     orderBy: [{ ageRangeMinMonths: 'asc' }, { title: 'asc' }],
-    include: { responses: { where: { childId: child.id }, orderBy: { createdAt: 'desc' }, take: 1, include: { author: { select: { id: true, email: true } }, media: { orderBy: { createdAt: 'asc' } } } } },
+    include: { responses: { where: { childId: child.id }, orderBy: { createdAt: 'desc' }, take: 1, include: { author: { select: { id: true, email: true, displayName: true } }, media: { orderBy: { createdAt: 'asc' } } } } },
   });
   const guidanceAge = Math.min(48, Math.max(0, Math.round(age.activeAgeInMonths)));
   const [guidance, weeklyResponses] = await Promise.all([
@@ -107,10 +107,10 @@ export async function getTimelineObservations(childId: string): Promise<Timeline
   await requireChildAccess(childId);
   const responses = await db.milestoneResponse.findMany({
     where: { childId }, orderBy: { createdAt: 'desc' },
-    include: { author: { select: { id: true, email: true } }, milestone: { select: { id: true, title: true, domain: true, source: true, sourceUrl: true } }, media: { orderBy: { createdAt: 'asc' } } },
+    include: { author: { select: { id: true, email: true, displayName: true } }, milestone: { select: { id: true, title: true, domain: true, source: true, sourceUrl: true } }, media: { orderBy: { createdAt: 'asc' } } },
   });
   return Promise.all(responses.map(async (item) => ({
-    id: item.id, status: item.status as MilestoneStatus, note: item.note, createdAt: item.createdAt.toISOString(), author: item.author, milestone: item.milestone, media: await signedMedia(item.media),
+    id: item.id, status: item.status as MilestoneStatus, note: item.note, createdAt: item.createdAt.toISOString(), author: { id: item.author.id, email: item.author.email, name: item.author.displayName }, milestone: item.milestone, media: await signedMedia(item.media),
   })));
 }
 

@@ -21,7 +21,7 @@ export function FamilyControls({ childId, preference, relationship = 'owner', me
     setInviteMessage(null);
     try {
       const result = await createCaregiverInvite({ childId, email: inviteEmail });
-      if (!result.ok) throw new Error(result.error ?? 'Invite could not be sent.');
+      if (!result.ok) throw new Error('error' in result ? result.error : 'Invite could not be sent.');
       setInviteEmail('');
       setInviteMessage('Invite sent. They can join this child’s space from their email.');
     } catch (error) {
@@ -35,7 +35,7 @@ export function FamilyControls({ childId, preference, relationship = 'owner', me
     setReminderMessage(null);
     try {
       const result = await setReminderPreference({ childId, enabled: next });
-      if (!result.ok) throw new Error(result.error ?? 'Reminder setting could not be saved.');
+      if (!result.ok) throw new Error('error' in result ? result.error : 'Reminder setting could not be saved.');
       setReminderOn(next);
       setReminderMessage(next ? 'Gentle reminders turned on.' : 'Reminders paused.');
     } catch (error) {

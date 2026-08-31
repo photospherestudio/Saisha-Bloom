@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
+  <title id="title">Saisha Bloom — notice the little things</title>
+  <desc id="desc">A calm child-development tracker that turns everyday observations into gentle, playful next steps.</desc>
+
+  <rect width="1200" height="400" rx="32" fill="#35513e"/>
+
+  <g id="title-block" transform="translate(64 60)">
+    <text x="0" y="0" fill="#f0b429" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="800" letter-spacing="3">CALM CHILD DEVELOPMENT TRACKER</text>
+    <text x="0" y="94" fill="#fffefa" font-family="Georgia, Times New Roman, serif" font-size="78" font-weight="400" letter-spacing="-4">Saisha</text>
+    <text x="0" y="170" fill="#fffefa" font-family="Georgia, Times New Roman, serif" font-size="78" font-weight="400" letter-spacing="-4">Bloom</text>
+    <text x="0" y="222" fill="#e2ebe0" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="25">Notice the little things.</text>
+    <text x="0" y="270" fill="#e2ebe0" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="20">From observation to playful next steps.</text>
+  </g>
+
+  <g id="project-proof" transform="translate(700 52)">
+    <rect width="436" height="296" rx="26" fill="#fffefa"/>
+    <text x="30" y="42" fill="#c1587a" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="800" letter-spacing="2">THE EVERYDAY LOOP</text>
+    <path d="M52 91C100 91 100 91 144 91C188 91 188 157 232 157C276 157 276 223 320 223C348 223 355 223 382 223" fill="none" stroke="#dbe4d8" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="52" cy="91" r="18" fill="#35513e"/>
+    <circle cx="144" cy="91" r="18" fill="#c1587a"/>
+    <circle cx="232" cy="157" r="18" fill="#6b5b7a"/>
+    <circle cx="320" cy="223" r="18" fill="#f0b429"/>
+    <path d="M45 91l5 5 10-12M137 91l5 5 10-12M225 157l5 5 10-12M313 223l5 5 10-12" fill="none" stroke="#fffefa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="30" y="126" fill="#2b2a28" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19" font-weight="800">Notice</text>
+    <text x="122" y="126" fill="#2b2a28" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19" font-weight="800">Check in</text>
+    <text x="210" y="192" fill="#2b2a28" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19" font-weight="800">Understand</text>
+    <text x="298" y="258" fill="#2b2a28" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="19" font-weight="800">Try</text>
+    <path d="M365 66l10 10m0-10l-10 10M365 66h18" fill="none" stroke="#f0b429" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

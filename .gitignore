@@ -8,3 +8,9 @@ output
 .playwright-cli
 supabase/.branches
 supabase/.temp
+.agents/
+skills-lock.json
+
+.vercel
+.env*
+!.env.example

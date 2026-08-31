@@ -18,18 +18,19 @@ export async function getCurrentAppUser(email?: string) {
     const authUser = await getCurrentAuthUser();
     const authEmail = authUser?.email?.toLowerCase();
     const supabaseUserId = authUser?.id;
+    const metadataName = typeof authUser?.user_metadata?.display_name === 'string' ? authUser.user_metadata.display_name.trim().slice(0, 80) : '';
     if (!authEmail || !supabaseUserId) return null;
     const byAuthId = await db.user.findUnique({ where: { supabaseUserId } });
     if (byAuthId) {
-      if (byAuthId.email !== authEmail) return db.user.update({ where: { id: byAuthId.id }, data: { email: authEmail } });
+      if (byAuthId.email !== authEmail || (metadataName && byAuthId.displayName !== metadataName)) return db.user.update({ where: { id: byAuthId.id }, data: { email: authEmail, ...(metadataName ? { displayName: metadataName } : {}) } });
       return byAuthId;
     }
     const byEmail = await db.user.findUnique({ where: { email: authEmail } });
     if (byEmail) {
       if (byEmail.supabaseUserId && byEmail.supabaseUserId !== supabaseUserId) return null;
-      return db.user.update({ where: { id: byEmail.id }, data: { supabaseUserId } });
+      return db.user.update({ where: { id: byEmail.id }, data: { supabaseUserId, ...(metadataName ? { displayName: metadataName } : {}) } });
     }
-    return db.user.create({ data: { email: authEmail, supabaseUserId } });
+    return db.user.create({ data: { email: authEmail, supabaseUserId, displayName: metadataName || null } });
   }
 
   const cookieStore = await cookies();

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AppHeader } from '@/components/AppHeader';
 import { milestoneTitleForGender } from '@/lib/demo-data';
 import { getChild, getTimelineObservations } from '@/lib/queries';
+import { getCurrentAppUser } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import { ageDisplay, asFamilyChild, statusLabel } from '@/components/saisha-ui';
 
@@ -13,6 +14,7 @@ export default async function TimelinePage({ params }: { params: Promise<{ id: s
   if (!child) notFound();
   const familyChild = asFamilyChild(child);
   const timeline = id === 'demo' ? [] : await getTimelineObservations(id);
+  const viewer = id === 'demo' ? null : await getCurrentAppUser();
   const events = timeline.map((item) => ({ ...item, milestoneId: item.milestone.id })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const { corrected, chronological, adjusted } = ageDisplay(familyChild);
   const byMilestone = new Map(child.milestones.map((item) => [item.id, item]));
@@ -34,7 +36,7 @@ export default async function TimelinePage({ params }: { params: Promise<{ id: s
                 if (!milestone) return null;
                 return <div className="timeline-item" key={event.id ?? `${event.milestoneId}-${event.createdAt}-${index}`}>
                   <div className="timeline-date mono">{new Date(event.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</div>
-                  <div><p className="milestone-title">{milestoneTitleForGender(milestone.title, child.gender)}</p><div className="milestone-sub"><span>{statusLabel(event.status)}</span>{event.author?.name || event.author?.email ? <span>by {event.author.name ?? event.author.email}</span> : null}</div>{event.note ? <p className="timeline-note">{event.note}</p> : null}{event.media?.length ? <div className="timeline-media">{event.media.map((item) => item.signedUrl ? <img src={item.signedUrl} alt="Saved family memory" key={item.id} /> : null)}</div> : null}</div>
+                  <div><p className="milestone-title">{milestoneTitleForGender(milestone.title, child.gender)}</p><div className="milestone-sub"><span>{statusLabel(event.status)}</span>{event.author?.name || event.author?.email ? <span>by {event.author.id === viewer?.id ? 'you' : event.author.name ?? event.author.email}</span> : null}</div>{event.note ? <p className="timeline-note">{event.note}</p> : null}{event.media?.length ? <div className="timeline-media">{event.media.map((item) => item.signedUrl ? <img src={item.signedUrl} alt="Saved family memory" key={item.id} /> : null)}</div> : null}</div>
                 </div>
               })}
             </div>

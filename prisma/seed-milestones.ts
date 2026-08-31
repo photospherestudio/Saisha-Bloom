@@ -82,12 +82,12 @@ async function main() {
     skipDuplicates: true,
   });
 
-  console.log(`Seeded ${cdcData.length} CDC, ${whoData.milestones.length} WHO, and ${guidanceData.length} additional guidance records.`);
+  console.info(`Seeded ${cdcData.length} CDC, ${whoData.milestones.length} WHO, and ${guidanceData.length} additional guidance records.`);
 }
 
 main()
-  .catch((error) => {
-    console.error(error);
+  .catch(() => {
+    console.error('Seed failed. Check the database configuration and seed files.');
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());

@@ -107,10 +107,10 @@ async function scrapeAll() {
   const all = [];
 
   for (const [ageMonths, url] of Object.entries(AGE_URLS)) {
-    console.log(`Fetching ${ageMonths} months: ${url}`);
+    console.info(`Fetching ${ageMonths} months: ${url}`);
     const html = await fetchPage(url);
     const milestones = parseAgePage(html, Number(ageMonths), url);
-    console.log(`  -> found ${milestones.length} milestones`);
+    console.info(`  -> found ${milestones.length} milestones`);
 
     if (milestones.length === 0) {
       console.warn(
@@ -132,11 +132,11 @@ async function scrapeAll() {
     JSON.stringify(all, null, 2),
     'utf-8'
   );
-  console.log(`\nDone. ${all.length} total milestones written to ${outputPath}`);
-  console.log('Next: manually review the JSON before seeding your DB.');
+  console.info(`\nDone. ${all.length} total milestones written to ${outputPath}`);
+  console.info('Next: manually review the JSON before seeding your DB.');
 }
 
-scrapeAll().catch((err) => {
-  console.error('Scrape failed:', err);
+scrapeAll().catch(() => {
+  console.error('Scrape failed. Check network access and source markup.');
   process.exit(1);
 });

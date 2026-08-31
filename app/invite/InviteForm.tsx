@@ -14,7 +14,7 @@ export default function InviteForm({ initialToken }: { initialToken: string }) {
     setMessage(null);
     try {
       const data = await acceptCaregiverInvite(token);
-      if (!data.ok) throw new Error(data.error ?? 'Invite could not be accepted.');
+      if (!data.ok) throw new Error('error' in data ? data.error : 'Invite could not be accepted.');
       setMessage('Invite accepted. Open your dashboard to see shared child profile.');
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Invite could not be accepted.'); }
     finally { setPending(false); }

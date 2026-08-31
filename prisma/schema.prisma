@@ -12,6 +12,7 @@ model User {
   clerkId             String?              @unique
   supabaseUserId      String?              @unique
   email               String               @unique
+  displayName         String?
   timezone            String?
   createdAt           DateTime             @default(now())
   children            Child[]
@@ -170,4 +171,14 @@ model Guidance {
 
   @@index([ageRangeMinMonths, ageRangeMaxMonths, domain])
   @@index([kind, ageRangeMinMonths, ageRangeMaxMonths])
+}
+
+model AuthRateLimit {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  windowStart DateTime
+  attempts    Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@index([windowStart])
 }

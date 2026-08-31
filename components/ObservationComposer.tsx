@@ -28,10 +28,10 @@ export function ObservationComposer({ childId, milestoneId, status, demoMode = f
     setMessage(null);
     try {
       const result = await saveMilestoneResponse({ childId, milestoneId, status, note: note.trim() });
-      if (!result.ok || !result.responseId) throw new Error(result.error ?? 'Observation could not be saved.');
+      if (!result.ok || !result.responseId) throw new Error('error' in result ? result.error : 'Observation could not be saved.');
       const observationId = result.responseId;
       const targets = media.length ? await createObservationUploadTargets({ childId, responseId: observationId, files: media.map(({ file }) => ({ mimeType: file.type, sizeBytes: file.size })) }) : null;
-      if (targets && (!targets.ok || !targets.uploads)) throw new Error(targets.error ?? 'Photo upload could not start.');
+      if (targets && (!targets.ok || !targets.uploads)) throw new Error('error' in targets ? targets.error : 'Photo upload could not start.');
       const uploaded: { objectPath: string; mimeType: string; sizeBytes: number }[] = [];
       for (const [index, item] of media.entries()) {
         const target = targets!.uploads[index];
@@ -41,7 +41,7 @@ export function ObservationComposer({ childId, milestoneId, status, demoMode = f
       }
       if (uploaded.length) {
         const registered = await registerObservationMedia({ childId, responseId: observationId, uploads: uploaded });
-        if (!registered.ok) throw new Error(registered.error ?? 'Photo could not be attached.');
+         if (!registered.ok) throw new Error('error' in registered ? registered.error : 'Photo could not be attached.');
       }
       setNote('');
       setMedia([]);
