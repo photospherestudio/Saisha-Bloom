@@ -14,3 +14,5 @@ skills-lock.json
 .vercel
 .env*
 !.env.example
+/.openai/
+/docs/SAISHA_BLOOM_PRD_MASTER.md
