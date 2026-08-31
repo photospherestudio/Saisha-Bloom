@@ -10,6 +10,17 @@
   <a href="https://saisha-bloom.vercel.app/child/demo/checklist">Open the public demo ↗</a>
 </p>
 
+<p align="center">
+  <a href="https://saisha-bloom.vercel.app"><img src="https://img.shields.io/badge/Website-35513E?logo=vercel&logoColor=white" alt="Website"></a>
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white" alt="Next.js 15"></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-20232A?logo=react&logoColor=61DAFB" alt="React 19"></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5.9"></a>
+  <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-2-3ECF8E?logo=supabase&logoColor=white" alt="Supabase"></a>
+  <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white" alt="Prisma 6"></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 3.4"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-35513E" alt="MIT License"></a>
+</p>
+
 > Notice the little things.
 
 Saisha Bloom is a calm, source-led child-development tracker for parents and caregivers. It turns everyday observations into useful context, gentle activities, and a clearer story to bring to a child-health professional when needed.
