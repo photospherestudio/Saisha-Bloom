@@ -132,3 +132,13 @@ Authenticated child data is protected through Supabase auth and server-side acce
 Next.js · React · TypeScript · Prisma · Supabase · Tailwind CSS
 
 **Current stage:** Working MVP / product foundation
+
+## Made for everyone
+
+Saisha Bloom was created by **Sourav Deb** and is made for everyone. You are welcome to use it, learn from it, and improve it under the [MIT License](./LICENSE).
+
+To modify the project, create a fork on GitHub, make your changes in your fork, and open a pull request when you are ready to share them.
+
+## License
+
+This project is available under the [MIT License](./LICENSE).
