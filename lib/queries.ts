@@ -1,5 +1,6 @@
 import { db } from './db';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import { POLICY_VERSION } from './policy-content';
 import { getCurrentAppUser, hasSupabaseConfig } from './auth';
 import { childAge, cdcCheckpointForAge } from './age';
@@ -40,7 +41,9 @@ function toGuidance(item: { id: string; externalId: string; title: string; summa
   return { ...item, kind: item.kind as Guidance['kind'], reviewedAt: item.reviewedAt.toISOString() };
 }
 
-export async function listAccessibleChildren(): Promise<AccessibleChild[]> {
+const currentPolicyDocuments = cache(async (userId: string) => db.policyAcceptance.findMany({ where: { userId, version: POLICY_VERSION, document: { in: ['terms', 'privacy'] } }, select: { document: true } }));
+
+export const listAccessibleChildren = cache(async function listAccessibleChildren(): Promise<AccessibleChild[]> {
   const user = await getCurrentAppUser();
   if (!user) return [];
   const children = await db.child.findMany({
@@ -49,21 +52,20 @@ export async function listAccessibleChildren(): Promise<AccessibleChild[]> {
     orderBy: [{ createdAt: 'asc' }],
   });
   return children.map((child) => ({ id: child.id, name: child.name, dob: child.dob.toISOString(), gender: child.gender as AccessibleChild['gender'], relationship: child.userId === user.id ? 'owner' : 'editor' }));
-}
+});
 
-export async function requireChildAccess(childId: string, _access: 'read' | 'write' = 'read') {
+export const requireChildAccess = cache(async function requireChildAccess(childId: string, _access: 'read' | 'write' = 'read') {
   const user = await getCurrentAppUser();
   if (!user) throw new ChildAccessError();
   if (user.deletionRequestedAt) throw new ChildAccessError();
-  const policyVersion = POLICY_VERSION;
-  const accepted = await db.policyAcceptance.count({ where: { userId: user.id, version: policyVersion, document: { in: ['terms', 'privacy'] } } });
-  if (accepted < 2) throw new ChildAccessError();
-  const child = await db.child.findFirst({
-    where: { id: childId, OR: [{ userId: user.id }, { members: { some: { userId: user.id, role: 'editor' } } }] },
-  });
+  const [accepted, child] = await Promise.all([
+    currentPolicyDocuments(user.id),
+    db.child.findFirst({ where: { id: childId, OR: [{ userId: user.id }, { members: { some: { userId: user.id, role: 'editor' } } }] } }),
+  ]);
+  if (new Set(accepted.map((item) => item.document)).size < 2) throw new ChildAccessError();
   if (!child) throw new ChildAccessError();
   return { child, user, relationship: child.userId === user.id ? 'owner' as const : 'editor' as const };
-}
+});
 
 export async function requireChildOwner(childId: string) {
   const access = await requireChildAccess(childId, 'write');
@@ -80,9 +82,9 @@ export async function getChild(id?: string): Promise<ChildWithMilestones | null>
     return null;
   }
   const policyVersion = POLICY_VERSION;
-  const currentPolicies = await db.policyAcceptance.findMany({ where: { userId: user.id, document: { in: ['terms', 'privacy'] }, version: policyVersion }, select: { document: true } });
+  const [currentPolicies, selectableChildren] = await Promise.all([currentPolicyDocuments(user.id), id ? Promise.resolve(null) : listAccessibleChildren()]);
   if (new Set(currentPolicies.map((item) => item.document)).size < 2) redirect('/consent');
-  const activeChildId = id ?? (await listAccessibleChildren())[0]?.id;
+  const activeChildId = id ?? selectableChildren?.[0]?.id;
   if (!activeChildId) return null;
   let access;
   try {
@@ -94,17 +96,11 @@ export async function getChild(id?: string): Promise<ChildWithMilestones | null>
   const { child } = access;
   if (child.userId === user.id && (child.guardianNoticeVersion !== policyVersion || !child.guardianAttestedAt)) redirect('/consent');
   const age = childAge(child.dob, child.gestationalWeeks);
-  const milestones = await db.milestone.findMany({
-    where: { source: 'CDC Learn the Signs. Act Early.', domain: { in: ['social_emotional', 'language_communication', 'cognitive', 'movement_physical'] }, ageRangeMinMonths: { lte: 48 }, ageRangeMaxMonths: { gte: 2 } },
-    orderBy: [{ ageRangeMinMonths: 'asc' }, { title: 'asc' }],
-    include: { responses: { where: { childId: child.id }, orderBy: { createdAt: 'desc' }, take: 1, include: { author: { select: { id: true, email: true, displayName: true } }, media: { orderBy: { createdAt: 'asc' } } } } },
-  });
   const guidanceAge = Math.min(48, Math.max(0, Math.round(age.activeAgeInMonths)));
-  const [guidance, weeklyResponses] = await Promise.all([
+  const [milestones, guidance, weeklyResponses, accessibleChildren, reminderPreference, family, growthMeasurements] = await Promise.all([
+    db.milestone.findMany({ where: { source: 'CDC Learn the Signs. Act Early.', domain: { in: ['social_emotional', 'language_communication', 'cognitive', 'movement_physical'] }, ageRangeMinMonths: { lte: 48 }, ageRangeMaxMonths: { gte: 2 } }, orderBy: [{ ageRangeMinMonths: 'asc' }, { title: 'asc' }], include: { responses: { where: { childId: child.id }, orderBy: { createdAt: 'desc' }, take: 1, include: { author: { select: { id: true, email: true, displayName: true } }, media: { orderBy: { createdAt: 'asc' } } } } } }),
     db.guidance.findMany({ where: { ageRangeMinMonths: { lte: guidanceAge }, ageRangeMaxMonths: { gte: guidanceAge } }, orderBy: [{ kind: 'asc' }, { ageRangeMinMonths: 'asc' }, { externalId: 'asc' }] }),
     db.milestoneResponse.findMany({ where: { childId: child.id, createdAt: { gte: startOfWeekInTimeZone(new Date(), user.timezone ?? 'UTC') } }, select: { milestoneId: true, status: true, createdAt: true }, orderBy: { createdAt: 'desc' } }),
-  ]);
-  const [accessibleChildren, reminderPreference, family, growthMeasurements] = await Promise.all([
     listAccessibleChildren(),
     db.reminderPreference.findUnique({ where: { userId_childId: { userId: user.id, childId: child.id } }, select: { enabled: true, emailCheckpointEnabled: true, pushCheckpointEnabled: true, caregiverActivityEnabled: true, user: { select: { email: true } } } }),
     db.child.findUnique({ where: { id: child.id }, select: { members: { orderBy: { createdAt: 'asc' }, select: { id: true, createdAt: true, user: { select: { email: true } } } }, invites: { where: { acceptedAt: null, revokedAt: null }, orderBy: { createdAt: 'desc' }, select: { id: true, email: true, expiresAt: true } } } }),

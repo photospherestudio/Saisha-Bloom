@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 import { db } from './db';
 import { createClient } from '@/lib/supabase/server';
 
@@ -6,14 +7,14 @@ export function hasSupabaseConfig() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 }
 
-export async function getCurrentAuthUser() {
+export const getCurrentAuthUser = cache(async function getCurrentAuthUser() {
   if (!hasSupabaseConfig()) return null;
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   return error ? null : user;
-}
+});
 
-export async function getCurrentAppUser(email?: string) {
+export const getCurrentAppUser = cache(async function getCurrentAppUser(email?: string) {
   if (hasSupabaseConfig()) {
     const authUser = await getCurrentAuthUser();
     const authEmail = authUser?.email?.toLowerCase();
@@ -46,4 +47,4 @@ export async function getCurrentAppUser(email?: string) {
   const user = await db.user.upsert({ where: { email }, update: {}, create: { email } });
   cookieStore.set('milestones-user-id', user.id, { httpOnly: true, sameSite: 'lax', path: '/' });
   return user;
-}
+});
