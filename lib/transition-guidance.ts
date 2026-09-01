@@ -1,0 +1,7 @@
+export type TransitionCard = { title: string; copy: string; source: string; sourceUrl: string; reviewedAt: string };
+
+export function transitionForAge(ageMonths: number): TransitionCard {
+  if (ageMonths >= 6 && ageMonths < 12) return { title: 'Solids can stay simple', copy: 'If your child is already eating solid foods, calm, responsive meals can leave room for them to explore familiar textures at their own pace. Stay close and follow the feeding guidance you trust.', source: 'CDC Infant and Toddler Nutrition', sourceUrl: 'https://www.cdc.gov/infant-toddler-nutrition/', reviewedAt: '2026-09-01' };
+  if (ageMonths >= 12 && ageMonths < 30) return { title: 'Teething can shift a routine', copy: 'New teeth can make a familiar routine feel different for a while. Comfort, rest, and ordinary routines are often enough; contact your child’s clinician for symptoms that worry you.', source: 'American Academy of Pediatrics: HealthyChildren.org', sourceUrl: 'https://www.healthychildren.org/English/healthy-living/oral-health/Pages/Teething-4-to-7-Months.aspx', reviewedAt: '2026-09-01' };
+  return { title: 'A steady sleep routine can help', copy: 'A short, predictable wind-down can make bedtime feel calmer. Keep the routine flexible enough for your family and raise persistent sleep concerns with your child’s clinician.', source: 'American Academy of Pediatrics: HealthyChildren.org', sourceUrl: 'https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/default.aspx', reviewedAt: '2026-09-01' };
+}

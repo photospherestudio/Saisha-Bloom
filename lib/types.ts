@@ -39,6 +39,7 @@ export type Observation = {
   id?: string;
   status: MilestoneStatus;
   createdAt: string;
+  updatedAt?: string;
   note?: string | null;
   author?: { id: string; email: string; name?: string | null } | null;
   media?: ObservationMedia[];
@@ -47,6 +48,8 @@ export type Observation = {
 export type TimelineObservation = Observation & {
   id: string;
   milestone: Pick<Milestone, 'id' | 'title' | 'domain' | 'source' | 'sourceUrl'>;
+  canManage?: boolean;
+  anonymous?: boolean;
 };
 
 export type AccessibleChild = {
@@ -68,6 +71,7 @@ export type ChildWithMilestones = {
   gestationalWeeks?: number | null;
   heightCm?: number | null;
   weightKg?: number | null;
+  growthMeasurements?: Array<{ id: string; measuredAt: string; heightCm?: number | null; weightKg?: number | null; createdAt?: string }>;
   age?: {
     chronologicalAgeInMonths: number;
     correctedAgeInMonths: number;
@@ -79,8 +83,8 @@ export type ChildWithMilestones = {
   weeklyProgress?: { total: number; yes: number; almost: number; notYet: number };
   observations?: TimelineObservation[];
   accessibleChildren?: AccessibleChild[];
-  reminderPreference?: { enabled: boolean; email?: string | null } | null;
-  relationship?: AccessibleChild['relationship'];
+  reminderPreference?: { enabled: boolean; email?: string | null; emailCheckpointEnabled?: boolean; pushCheckpointEnabled?: boolean; caregiverActivityEnabled?: boolean } | null;
+  relationship: AccessibleChild['relationship'];
   familyMembers?: FamilyMember[];
   pendingInvites?: PendingInvite[];
 };

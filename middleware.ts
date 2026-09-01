@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { jsonError, logServerError, newCorrelationId, withCorrelationId } from '@/lib/http';
 
-const isProtectedRoute = (pathname: string) => pathname.startsWith('/dashboard') || (pathname.startsWith('/child/') && !pathname.startsWith('/child/demo'));
+const isProtectedRoute = (pathname: string) => pathname.startsWith('/dashboard') || pathname.startsWith('/account') || pathname.startsWith('/consent') || (pathname.startsWith('/child/') && !pathname.startsWith('/child/demo'));
 
 export default async function middleware(request: NextRequest) {
   const correlationId = newCorrelationId();

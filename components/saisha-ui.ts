@@ -26,7 +26,7 @@ export function observationEventsFor(child: FamilyChild): ObservationEvent[] {
     : []);
 }
 
-export type ReminderPreference = { enabled: boolean; email?: string | null };
+export type ReminderPreference = { enabled: boolean; email?: string | null; emailCheckpointEnabled?: boolean; pushCheckpointEnabled?: boolean; caregiverActivityEnabled?: boolean };
 
 export function statusLabel(status: MilestoneStatus) {
   return status === 'yes' ? 'Noticed' : status === 'almost' ? 'Almost' : 'Not yet';

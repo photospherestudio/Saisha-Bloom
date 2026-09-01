@@ -2,12 +2,15 @@
   "name": "milestones",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/age.test.ts",
+    "test": "node --experimental-strip-types --test tests/age.test.ts tests/roadmap.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
@@ -23,15 +26,22 @@
     "@prisma/client": "6.19.3",
     "@supabase/ssr": "0.12.5",
     "@supabase/supabase-js": "2.112.4",
+    "@vercel/analytics": "2.0.1",
+    "archiver": "8.0.0",
     "next": "15.5.24",
     "pdf-lib": "^1.17.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "sharp": "0.35.4",
+    "tus-js-client": "4.3.1",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
+    "@types/archiver": "8.0.0",
     "@types/node": "22.20.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
+    "@types/web-push": "3.6.4",
     "autoprefixer": "10.5.4",
     "cheerio": "^1.2.0",
     "postcss": "8.5.26",

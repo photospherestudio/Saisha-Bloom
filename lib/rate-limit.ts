@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { headers } from 'next/headers';
 import { db } from './db';
 
-export async function consumeAuthAttempt(kind: 'login' | 'signup', limit: number, windowMs: number) {
+export async function consumeAuthAttempt(kind: 'login' | 'signup' | 'recovery' | 'resend_confirmation', limit: number, windowMs: number) {
   const requestHeaders = await headers();
   const forwardedFor = requestHeaders.get('x-forwarded-for');
   const ip = requestHeaders.get('x-real-ip') ?? forwardedFor?.split(',')[0]?.trim() ?? 'unknown';

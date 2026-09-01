@@ -1,6 +1,7 @@
 import cdcData from '@/prisma/seed-data/cdc-milestones-raw.json';
 import guidanceData from '@/prisma/seed-data/guidance.json';
 import type { ChildGender, ChildWithMilestones, Guidance, Milestone } from './types';
+import { reviewedMilestoneTitle } from './milestone-copy';
 
 export const AGE_BANDS = [2, 4, 6, 9, 12, 15, 18, 24, 30, 36, 48] as const;
 export const MONTHS_FROM_YEAR = Array.from({ length: 37 }, (_, index) => index + 12);
@@ -35,6 +36,7 @@ export const demoMilestones: Milestone[] = cdcMilestones.sort((a, b) => a.ageRan
 export const demoGuidance = guidanceData as Guidance[];
 
 export const demoChild: ChildWithMilestones = {
+  relationship: 'owner',
   id: 'demo',
   name: 'your little one',
   gender: 'girl',
@@ -44,20 +46,7 @@ export const demoChild: ChildWithMilestones = {
 };
 
 export function milestoneTitleForGender(title: string, gender?: ChildGender | null) {
-  if (!gender) return title;
-  const target = gender === 'girl'
-    ? { he: 'she', him: 'her', his: 'her', himself: 'herself' }
-    : { he: 'he', him: 'him', his: 'his', himself: 'himself' };
-  return title.replace(/\b(himself|herself|he|she|him|her|his|hers)\b/gi, (word) => {
-    const replacement = word.toLowerCase() === 'herself' || word.toLowerCase() === 'himself'
-      ? target.himself
-      : ['he', 'she'].includes(word.toLowerCase())
-        ? target.he
-        : ['him', 'her'].includes(word.toLowerCase())
-          ? target.him
-          : target.his;
-    return /^[A-Z]/.test(word) ? replacement[0].toUpperCase() + replacement.slice(1) : replacement;
-  });
+  return reviewedMilestoneTitle(title);
 }
 
 export function milestoneAgeLabel(minMonths: number, maxMonths: number) {

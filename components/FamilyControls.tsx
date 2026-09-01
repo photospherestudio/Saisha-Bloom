@@ -4,12 +4,13 @@ import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import type { FamilyMember, PendingInvite } from '@/lib/types';
 import type { ReminderPreference } from './saisha-ui';
-import { createCaregiverInvite, revokeCaregiverAccess, setReminderPreference } from '@/lib/actions';
+import { createCaregiverInvite, revokeCaregiverAccess } from '@/lib/actions';
+import { setReminderChannels } from '@/lib/push-actions';
 
 export function FamilyControls({ childId, preference, relationship = 'owner', members = [], pendingInvites = [] }: { childId: string; preference?: ReminderPreference | null; relationship?: 'owner' | 'editor'; members?: FamilyMember[]; pendingInvites?: PendingInvite[] }) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
-  const [reminderOn, setReminderOn] = useState(Boolean(preference?.enabled));
+  const [channels, setChannels] = useState({ email: Boolean(preference?.emailCheckpointEnabled ?? preference?.enabled), push: Boolean(preference?.pushCheckpointEnabled), caregiver: Boolean(preference?.caregiverActivityEnabled) });
   const [reminderMessage, setReminderMessage] = useState<string | null>(null);
   const [memberList, setMemberList] = useState(members);
   const [pending, setPending] = useState(false);
@@ -29,15 +30,15 @@ export function FamilyControls({ childId, preference, relationship = 'owner', me
     } finally { setPending(false); }
   }
 
-  async function toggleReminder() {
-    const next = !reminderOn;
+  async function toggleReminder(channel: 'email' | 'push' | 'caregiver') {
+    const next = { ...channels, [channel]: !channels[channel] };
     setPending(true);
     setReminderMessage(null);
     try {
-      const result = await setReminderPreference({ childId, enabled: next });
+      const result = await setReminderChannels({ childId, emailCheckpointEnabled: next.email, pushCheckpointEnabled: next.push, caregiverActivityEnabled: next.caregiver });
       if (!result.ok) throw new Error('error' in result ? result.error : 'Reminder setting could not be saved.');
-      setReminderOn(next);
-      setReminderMessage(next ? 'Gentle reminders turned on.' : 'Reminders paused.');
+      setChannels(next);
+      setReminderMessage('Notification preferences saved.');
     } catch (error) {
       setReminderMessage(error instanceof Error ? error.message : 'Reminder setting could not be saved.');
     } finally { setPending(false); }
@@ -62,8 +63,8 @@ export function FamilyControls({ childId, preference, relationship = 'owner', me
       <div className="utility-card">
         <div className="eyebrow">A gentle nudge</div>
         <h2>Keep it easy to remember.</h2>
-        <p className="muted">Opt in to one calm email around new developmental guideposts.</p>
-        <button className={`button ${reminderOn ? 'button-secondary' : 'button-primary'}`} type="button" onClick={() => void toggleReminder()} disabled={pending}>{reminderOn ? 'Pause reminders' : 'Turn on reminders'}</button>
+        <p className="muted">Each channel is optional and starts off. Messages never include child names, notes, photos, or milestone states.</p>
+        <div className="field"><label><input type="checkbox" checked={channels.email} onChange={() => void toggleReminder('email')} disabled={pending} /> Email guidepost check-ins</label><label><input type="checkbox" checked={channels.push} onChange={() => void toggleReminder('push')} disabled={pending} /> Push guidepost check-ins</label><label><input type="checkbox" checked={channels.caregiver} onChange={() => void toggleReminder('caregiver')} disabled={pending} /> Caregiver activity updates</label></div>
         {reminderMessage ? <p className="form-status" aria-live="polite">{reminderMessage}</p> : null}
       </div>
     </section>

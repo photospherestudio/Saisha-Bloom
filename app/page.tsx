@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { AppHeader } from '@/components/AppHeader';
+import { InstallPrompt } from '@/components/InstallPrompt';
 
 export default function HomePage() {
   return (
@@ -16,6 +17,7 @@ export default function HomePage() {
             <Link className="button button-secondary" href="/child/demo/checklist">See the tracker</Link>
           </div>
           <div className="hero-note"><span aria-hidden="true">✳</span> No pressure. No comparisons. Just a little more context.</div>
+          <InstallPrompt />
         </div>
         <div className="hero-art">
           <Image className="hero-art-image" src="/illustrations/homepage-hero-clean.png" alt="A parent and child building a colorful block tower together" width={1254} height={1254} priority sizes="(max-width: 860px) 90vw, 540px" />

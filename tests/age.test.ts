@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-// @ts-expect-error Node's native TypeScript runner loads the source module by its .ts path.
 import { cdcCheckpointForAge, childAge, correctedAgeInMonths, reminderCheckpointForAge } from '../lib/age.ts';
 
 const now = new Date('2026-08-30T00:00:00.000Z');

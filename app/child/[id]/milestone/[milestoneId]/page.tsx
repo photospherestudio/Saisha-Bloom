@@ -9,6 +9,10 @@ import { activityDetailsFor } from '@/lib/activity-bank';
 import { getRecommendation } from '@/lib/recommendation';
 import { getChild } from '@/lib/queries';
 import { ageDisplay, asFamilyChild } from '@/components/saisha-ui';
+import { MicroGuide } from '@/components/MicroGuide';
+import { EmergenceWindow } from '@/components/EmergenceWindow';
+import { getEmergenceWindow } from '@/lib/emergence-window';
+import { TransitionCard } from '@/components/TransitionCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +26,7 @@ export default async function MilestoneDetailPage({ params }: { params: Promise<
   const status = milestone.response?.status ?? 'not_yet';
   const recommendation = getRecommendation(milestone, status, age, child.guidance);
   const activity = activityDetailsFor(milestone, age);
+  const emergenceWindow = await getEmergenceWindow(milestone.id);
   const domainLabel = DOMAIN_LABELS[milestone.domain as keyof typeof DOMAIN_LABELS] ?? milestone.domain;
 
   return (
@@ -39,6 +44,7 @@ export default async function MilestoneDetailPage({ params }: { params: Promise<
             <div className="rec-label">{recommendation.tone === 'celebrate' ? 'Noticed' : 'A next little step'}</div>
             <h3>{recommendation.heading}</h3><p>{recommendation.tipText}</p>
           </div>
+          <EmergenceWindow window={emergenceWindow} />
           <section className="activity-detail-content" aria-labelledby="activity-detail-heading">
             <div className="eyebrow">Try it together</div>
             <h2 id="activity-detail-heading">{activity.activityTitle}</h2>
@@ -50,6 +56,8 @@ export default async function MilestoneDetailPage({ params }: { params: Promise<
               <div className="activity-fact"><h3>Materials required</h3><ul>{activity.materials.map((material) => <li key={material}>{material}</li>)}</ul></div>
             </div>
           </section>
+          <MicroGuide milestoneTitle={milestone.title} />
+          <TransitionCard ageMonths={age} />
           <Link className="button button-primary" href={`/child/${child.id}/checklist`} style={{ marginTop: 25 }}>Back to checklist</Link>
           </div>
           <div className="detail-illustration"><Image src={activityIllustrationSrc(milestone.title, milestone.domain)} alt="" width={700} height={700} sizes="(max-width: 780px) 70vw, 380px" /></div>

@@ -14,6 +14,9 @@ model User {
   email               String               @unique
   displayName         String?
   timezone            String?
+  deletionRequestedAt DateTime?
+  deletionErrorRef    String?
+  deletionAttempts    Int                  @default(0)
   createdAt           DateTime             @default(now())
   children            Child[]
   memberships         ChildMember[]
@@ -21,6 +24,10 @@ model User {
   responses           MilestoneResponse[]  @relation("ResponseAuthor")
   reminderPreferences ReminderPreference[]
   reminderDeliveries  ReminderDelivery[]
+  policyAcceptances   PolicyAcceptance[]
+  pushSubscriptions   PushSubscription[]
+  observationUploads  ObservationUpload[]
+
 }
 
 model Child {
@@ -33,12 +40,22 @@ model Child {
   gestationalWeeks Int?
   heightCm         Float?
   weightKg         Float?
+  guardianAttestedAt          DateTime?
+  guardianNoticeVersion       String?
+  guardianVerificationMethod  String?
+  guardianVerificationRef     String?
+  deletionRequestedAt         DateTime?
   createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
   responses        MilestoneResponse[]
   members          ChildMember[]
   invites          ChildInvite[]
   reminderPreferences ReminderPreference[]
   reminderDeliveries  ReminderDelivery[]
+  growthMeasurements GrowthMeasurement[]
+  observationUploads ObservationUpload[]
+
+  @@index([userId])
 }
 
 model Milestone {
@@ -51,6 +68,8 @@ model Milestone {
   sourceUrl        String
   responses        MilestoneResponse[]
   recommendations  Recommendation[]
+  emergenceWindow  MilestoneEmergenceWindow?
+  observationUploads ObservationUpload[]
 }
 
 model MilestoneResponse {
@@ -59,16 +78,22 @@ model MilestoneResponse {
   child       Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
   milestoneId String
   milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
-  userId      String
-  author      User      @relation("ResponseAuthor", fields: [userId], references: [id], onDelete: Restrict)
+  userId      String?
+  author      User?     @relation("ResponseAuthor", fields: [userId], references: [id], onDelete: SetNull)
   status      String
   note        String?
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  anonymizedAt          DateTime?
+  anonymizationBatchId  String?
+  retentionExpiresAt    DateTime?
+  retainedAt            DateTime?
   media       MilestoneResponseMedia[]
 
   @@index([childId, milestoneId, createdAt])
   @@index([childId, createdAt])
   @@index([userId, createdAt])
+  @@index([anonymizationBatchId])
 }
 
 model MilestoneResponseMedia {
@@ -121,6 +146,11 @@ model ReminderPreference {
   childId   String
   child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
   enabled   Boolean  @default(false)
+  emailCheckpointEnabled Boolean @default(false)
+  pushCheckpointEnabled Boolean @default(false)
+  caregiverActivityEnabled Boolean @default(false)
+  emailConsentAt DateTime?
+  pushConsentAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -135,14 +165,86 @@ model ReminderDelivery {
   childId     String
   child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
   checkpoint  Int
+  channel     String   @default("email")
   status      String   @default("pending")
   providerId  String?
   error       String?
   sentAt      DateTime?
   createdAt   DateTime @default(now())
 
-  @@unique([userId, childId, checkpoint])
+  @@unique([userId, childId, checkpoint, channel])
   @@index([status, createdAt])
+  @@index([userId])
+  @@index([childId])
+}
+
+model PolicyAcceptance {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   String
+  version    String
+  acceptedAt DateTime @default(now())
+
+  @@unique([userId, document, version])
+  @@index([userId, acceptedAt])
+}
+
+model GrowthMeasurement {
+  id         String   @id @default(cuid())
+  childId    String
+  child      Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  measuredAt DateTime
+  heightCm   Float?
+  weightKg   Float?
+  createdAt  DateTime @default(now())
+
+  @@index([childId, measuredAt])
+}
+
+model MilestoneEmergenceWindow {
+  id         String    @id @default(cuid())
+  milestoneId String   @unique
+  milestone  Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  minMonths  Float
+  maxMonths  Float
+  source     String
+  sourceUrl  String
+  reviewedAt DateTime
+
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model ObservationUpload {
+  id          String    @id
+  childId     String
+  child       Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  milestoneId String
+  milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      String
+  note        String?
+  files       Json
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([childId])
+  @@index([milestoneId])
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Recommendation {

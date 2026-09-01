@@ -1,9 +1,9 @@
 'use client';
 
 import { ChangeEvent, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import type { MilestoneStatus } from '@/lib/types';
-import { createObservationUploadTargets, registerObservationMedia, saveMilestoneResponse } from '@/lib/actions';
+import { abandonObservationUpload, finalizeObservation, prepareObservation } from '@/lib/observation-actions';
+import { Upload } from 'tus-js-client';
 
 type PendingMedia = { file: File; preview: string };
 
@@ -27,21 +27,22 @@ export function ObservationComposer({ childId, milestoneId, status, demoMode = f
     setPending(true);
     setMessage(null);
     try {
-      const result = await saveMilestoneResponse({ childId, milestoneId, status, note: note.trim() });
-      if (!result.ok || !result.responseId) throw new Error('error' in result ? result.error : 'Observation could not be saved.');
-      const observationId = result.responseId;
-      const targets = media.length ? await createObservationUploadTargets({ childId, responseId: observationId, files: media.map(({ file }) => ({ mimeType: file.type, sizeBytes: file.size })) }) : null;
-      if (targets && (!targets.ok || !targets.uploads)) throw new Error('error' in targets ? targets.error : 'Photo upload could not start.');
-      const uploaded: { objectPath: string; mimeType: string; sizeBytes: number }[] = [];
-      for (const [index, item] of media.entries()) {
-        const target = targets!.uploads[index];
-        const { error } = await createClient().storage.from(process.env.NEXT_PUBLIC_SUPABASE_IMAGE_BUCKET ?? 'milestone-memories').uploadToSignedUrl(target.objectPath, target.token, item.file);
-        if (error) throw error;
-        uploaded.push({ objectPath: target.objectPath, mimeType: item.file.type, sizeBytes: item.file.size });
-      }
-      if (uploaded.length) {
-        const registered = await registerObservationMedia({ childId, responseId: observationId, uploads: uploaded });
-         if (!registered.ok) throw new Error('error' in registered ? registered.error : 'Photo could not be attached.');
+      const prepared = await prepareObservation({ childId, milestoneId, status, note: note.trim(), files: media.map(({ file }) => ({ mimeType: file.type, sizeBytes: file.size })) });
+      if (!prepared.ok || !prepared.responseId) throw new Error('error' in prepared ? prepared.error : 'Observation could not be prepared.');
+      try {
+        for (const [index, item] of media.entries()) {
+          const target = prepared.uploads[index];
+          await new Promise<void>((resolve, reject) => {
+            // Supabase's resumable endpoint is pinned to a 6 MB TUS chunk as recommended by Storage.
+            const tus = new Upload(item.file, { endpoint: prepared.endpoint, retryDelays: [0, 3000, 5000, 10000, 20000], chunkSize: 6 * 1024 * 1024, uploadDataDuringCreation: true, removeFingerprintOnSuccess: true, headers: { 'x-signature': target.token }, metadata: { bucketName: process.env.NEXT_PUBLIC_SUPABASE_IMAGE_BUCKET ?? 'milestone-memories', objectName: target.objectPath, contentType: item.file.type, cacheControl: '3600' }, onError: reject, onSuccess: () => resolve() });
+            void tus.start();
+          });
+        }
+        const finalized = await finalizeObservation({ childId, responseId: prepared.responseId });
+        if (!finalized.ok) throw new Error('error' in finalized ? finalized.error : 'Observation could not be finalized.');
+      } catch (uploadError) {
+        await abandonObservationUpload({ childId, responseId: prepared.responseId });
+        throw uploadError;
       }
       setNote('');
       setMedia([]);
@@ -58,7 +59,7 @@ export function ObservationComposer({ childId, milestoneId, status, demoMode = f
       <textarea id={`note-${milestoneId}`} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Sipped from cup during lunch…" rows={3} />
       <div className="composer-actions">
         <label className="button button-secondary upload-button"><input type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple onChange={chooseMedia} />Add photos <span className="muted">{media.length}/3</span></label>
-        <button className="button button-primary" type="button" onClick={() => void save()} disabled={pending}>{pending ? 'Saving…' : 'Save memory'}</button>
+        <button className="button button-primary" type="button" onClick={() => void save()} disabled={pending}>{pending ? 'Saving…' : 'Save observation'}</button>
       </div>
       {media.length ? <div className="upload-previews">{media.map((item) => <img src={item.preview} alt="Selected memory preview" key={item.preview} />)}</div> : null}
       {message ? <p className="form-status" aria-live="polite">{message}</p> : null}

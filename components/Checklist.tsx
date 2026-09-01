@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { AGE_BANDS, currentAgeBand, DOMAIN_LABELS, milestoneAgeLabel, milestoneTitleForGender, MONTHS_FROM_YEAR, sourceCheckpointForMonth } from '@/lib/demo-data';
+import { currentAgeBand, DOMAIN_LABELS, sourceCheckpointForMonth } from '@/lib/demo-data';
+import { reviewedMilestoneTitle } from '@/lib/milestone-copy';
 import { getRecommendation } from '@/lib/recommendation';
 import { emptyWeeklyProgress, type WeeklyProgress as WeeklyProgressData } from '@/lib/weekly-progress';
 import type { ChildWithMilestones, MilestoneStatus } from '@/lib/types';
@@ -54,7 +55,8 @@ export function Checklist({ child }: { child: ChildWithMilestones }) {
   const [weekProgress, setWeekProgress] = useState<WeeklyProgressData>(child.weeklyProgress ?? emptyWeeklyProgress);
   const [weekTouched, setWeekTouched] = useState<Set<string>>(new Set());
   const sourceAge = selectedAge >= 12 ? sourceCheckpointForMonth(selectedAge) : selectedAge;
-  const ageOptions = [...AGE_BANDS.filter((band) => band < 12), ...MONTHS_FROM_YEAR];
+  const ageOptions = [...new Set(child.milestones.map((item) => item.ageRangeMinMonths))].sort((a, b) => a - b);
+  const nextGuidepost = ageOptions.find((band) => band > sourceAge);
   const filteredMilestones = child.milestones.filter((item) => item.ageRangeMinMonths === sourceAge && item.domain === selectedDomain);
 
   function changeDomain(domain: string) {
@@ -69,20 +71,11 @@ export function Checklist({ child }: { child: ChildWithMilestones }) {
     const nextStatuses = { ...selectedStatuses, [milestoneId]: status };
     setSelectedStatuses(nextStatuses);
     setSelected(milestoneId);
-    const nextAge = adaptiveAgeFor(child.milestones, selectedAge, selectedDomain, nextStatuses);
-    if (nextAge !== selectedAge) {
-      setSelectedAge(nextAge);
-      setSelected(null);
-      setAdvanceNotice(`Your answers moved this path forward to ${nextAge} months.`);
-    }
   }
 
-  function recordSaved(milestoneId: string) {
-    if (weekTouched.has(milestoneId)) return;
-    const status = selectedStatuses[milestoneId];
-    if (!status) return;
-    setWeekTouched((current) => new Set(current).add(milestoneId));
-    setWeekProgress((current) => ({ ...current, total: current.total + 1, yes: current.yes + (status === 'yes' ? 1 : 0), almost: current.almost + (status === 'almost' ? 1 : 0), notYet: current.notYet + (status === 'not_yet' ? 1 : 0) }));
+  function recordSaved() {
+    // The server is the source of truth; a reload re-renders the latest-status weekly aggregate.
+    window.location.reload();
   }
 
   return (
@@ -100,7 +93,7 @@ export function Checklist({ child }: { child: ChildWithMilestones }) {
           <div className="filter-row" role="tablist" aria-label="Milestone age bands">
             {ageOptions.map((band) => <button className={`filter-pill ${selectedAge === band ? 'active' : ''}`} key={band} type="button" role="tab" aria-selected={selectedAge === band} onClick={() => setSelectedAge(band)}>{band} mo</button>)}
           </div>
-          {advanceNotice ? <div className="filter-help" aria-live="polite">{advanceNotice}</div> : selectedAge >= 12 && sourceAge !== selectedAge ? <div className="filter-help">Showing the closest guidepost: {sourceAge} months.</div> : null}
+          {advanceNotice ? <div className="filter-help" aria-live="polite">{advanceNotice}</div> : <div className="filter-help">Current age: {age.toFixed(1)} months. Viewing the {sourceAge}-month guidepost{nextGuidepost ? `; next guidepost: ${nextGuidepost} months` : ''}. Guideposts are not deadlines.</div>}
           <div className="filter-label">Domain</div>
           <div className="filter-row" role="tablist" aria-label="Milestone domains">
             {Object.entries(DOMAIN_LABELS).map(([domain, label]) => <button className={`filter-pill ${selectedDomain === domain ? 'active' : ''}`} key={domain} type="button" role="tab" aria-selected={selectedDomain === domain} onClick={() => changeDomain(domain)}>{label}</button>)}
@@ -114,9 +107,9 @@ export function Checklist({ child }: { child: ChildWithMilestones }) {
               <div className="milestone-row" key={milestone.id}>
                 <span className="milestone-node"><Bloom status={status} size="small" /></span>
                 <div>
-                  <p className="milestone-title">{milestoneTitleForGender(milestone.title, child.gender)}</p>
+                  <p className="milestone-title">{reviewedMilestoneTitle(milestone.title)}</p>
                   <div className="milestone-sub">
-                    <span className="mono">{milestoneAgeLabel(milestone.ageRangeMinMonths, milestone.ageRangeMaxMonths)}</span>
+                    <span className="mono">{milestone.ageRangeMinMonths}-month guidepost</span>
                   </div>
                   {recommendation && selected === milestone.id ? (
                     <div className={`recommendation ${recommendation.tone === 'reassure' ? 'reassure' : ''} ${recommendation.tone === 'mention' ? 'mention' : ''}`}>
@@ -125,7 +118,8 @@ export function Checklist({ child }: { child: ChildWithMilestones }) {
                       <p>{recommendation.activityText}</p>
                       <p>{recommendation.tipText}</p>
                       <Link className="source-link" href={`/child/${child.id}/milestone/${milestone.id}`} style={{ display: 'inline-block', marginTop: 12 }}>Open milestone detail ↗</Link>
-                      <ObservationComposer childId={child.id} milestoneId={milestone.id} status={status ?? 'not_yet'} demoMode={child.id === 'demo'} onSaved={() => recordSaved(milestone.id)} />
+                      <p className="form-status" aria-live="polite">Unsaved selection — save this observation when you’re ready.</p>
+                      <ObservationComposer childId={child.id} milestoneId={milestone.id} status={status ?? 'not_yet'} demoMode={child.id === 'demo'} onSaved={recordSaved} />
                     </div>
                   ) : null}
                 </div>

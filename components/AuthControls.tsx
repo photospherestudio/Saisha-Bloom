@@ -17,7 +17,7 @@ export function AuthControls() {
   }, []);
 
   if (signedIn) {
-    return <button className="header-link" type="button" onClick={async () => { await createClient().auth.signOut(); router.push('/'); router.refresh(); }}>Sign out</button>;
+    return <><Link className="header-link" href="/account">Account</Link><button className="header-link" type="button" onClick={async () => { await createClient().auth.signOut(); router.push('/'); router.refresh(); }}>Sign out</button></>;
   }
 
   return <><Link className="header-link" href="/sign-in">Sign in</Link><Link className="header-link" href="/sign-up">Sign up</Link></>;

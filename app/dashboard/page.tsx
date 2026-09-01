@@ -9,6 +9,8 @@ import { ChildSwitcher } from '@/components/ChildSwitcher';
 import { FamilyControls } from '@/components/FamilyControls';
 import { ageDisplay, asFamilyChild } from '@/components/saisha-ui';
 import { notFound } from 'next/navigation';
+import { GrowthTracker } from '@/components/GrowthTracker';
+import { getGrowthMeasurements } from '@/lib/growth';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +20,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
   if (!child) {
     return <main className="page"><AppHeader /><section className="shell form-wrap"><div className="eyebrow">Your family space</div><h1 className="display">Make some room.</h1><p className="form-intro">Create your first child profile to begin noticing the small things.</p><Link className="button button-primary" href="/onboarding">Create a child profile</Link></section></main>;
   }
+  const [growthMeasurements] = await Promise.all([getGrowthMeasurements(child.id)]);
   const familyChild = asFamilyChild(child);
   const progress = progressFor(child);
   const { chronological, corrected, adjusted } = ageDisplay(familyChild);
@@ -39,6 +42,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
         <div className="utility-actions">{child.id !== 'demo' ? <a className="button button-secondary" href={`/api/children/${child.id}/visit-summary`}>Prepare pediatrician summary</a> : null}<Link className="button button-secondary" href={`/child/${child.id}/timeline`}>Open full timeline</Link></div>
         {child.id !== 'demo' ? <FamilyControls childId={child.id} preference={familyChild.reminderPreference} relationship={familyChild.relationship} members={familyChild.familyMembers} pendingInvites={familyChild.pendingInvites} /> : null}
         <GrowthReference ageInMonths={chronological} heightCm={child.heightCm} weightKg={child.weightKg} />
+        {child.id !== 'demo' ? <GrowthTracker childId={child.id} relationship={familyChild.relationship} measurements={growthMeasurements} legacyHeightCm={child.heightCm} legacyWeightKg={child.weightKg} /> : null}
         <WeeklyFeed child={child} />
       </section>
     </main>

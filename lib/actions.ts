@@ -67,8 +67,8 @@ export async function createChild(formData: FormData) {
   const displayName = String(formData.get('displayName') ?? '').trim();
   const name = String(formData.get('name') ?? '').trim();
   const dob = String(formData.get('dob') ?? '');
-  const genderValue = String(formData.get('gender') ?? '').trim();
-  const gender = genderValue === 'boy' || genderValue === 'girl' ? genderValue : null;
+  // Gender is retained only as a legacy nullable field; copy is name-first and neutral.
+  const gender = null;
   const gestationalWeeksValue = String(formData.get('gestationalWeeks') ?? '').trim();
   const gestationalWeeks = gestationalWeeksValue ? Number(gestationalWeeksValue) : null;
   const heightCmValue = String(formData.get('heightCm') ?? '').trim();
@@ -81,7 +81,6 @@ export async function createChild(formData: FormData) {
   if (displayName.length > 80) return actionError('Keep your first name under 80 characters.');
   if (!name) return actionError('Add your child’s first name.');
   if (!dob || Number.isNaN(new Date(dob).getTime())) return actionError('Add a date of birth.');
-  if (!gender) return actionError('Choose Girl or Boy so we can use the right pronouns.');
   if (gestationalWeeks !== null && (!Number.isInteger(gestationalWeeks) || gestationalWeeks < 20 || gestationalWeeks > 45)) return actionError('Gestational weeks must be between 20 and 45.');
   if (heightCm !== null && (!Number.isFinite(heightCm) || heightCm < 30 || heightCm > 140)) return actionError('Height must be between 30 and 140 cm.');
   if (weightKg !== null && (!Number.isFinite(weightKg) || weightKg < 1 || weightKg > 45)) return actionError('Weight must be between 1 and 45 kg.');
@@ -234,4 +233,38 @@ export async function setReminderPreference(input: { childId: string; enabled: b
   } catch (error) {
     return actionFailure('Child profile not found.', error);
   }
+}
+
+export async function resendConfirmation(input: { email: string; destination?: string } | string, destination?: string) {
+  const request = typeof input === 'string' ? { email: input, destination } : input;
+  const correlationId = newCorrelationId();
+  try {
+    if (!(await consumeAuthAttempt('resend_confirmation', 5, 60 * 1000))) return { ok: false as const, error: 'Too many requests. Try again later.', message: 'Too many requests. Try again later.', correlationId };
+    const supabase = await createServerSupabaseClient();
+    await supabase.auth.resend({ type: 'signup', email: request.email.trim().toLowerCase(), options: { emailRedirectTo: `${siteUrl()}/auth/confirm?next=${encodeURIComponent(safeDestination(request.destination ?? '/onboarding'))}` } });
+    return { ok: true as const, message: 'If that email is eligible, a confirmation message is on its way.' };
+  } catch (error) { logServerError(correlationId, error); return { ok: true as const, message: 'If that email is eligible, a confirmation message is on its way.' }; }
+}
+
+export async function requestPasswordRecovery(input: { email: string } | string) {
+  const email = typeof input === 'string' ? input : input.email;
+  const correlationId = newCorrelationId();
+  try {
+    if (!(await consumeAuthAttempt('recovery', 5, 60 * 1000))) return { ok: false as const, error: 'Too many requests. Try again later.', message: 'Too many requests. Try again later.', correlationId };
+    const supabase = await createServerSupabaseClient();
+    await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${siteUrl()}/auth/confirm?next=${encodeURIComponent('/account/update-password')}` });
+  } catch (error) { logServerError(correlationId, error); }
+  return { ok: true as const, message: 'If an account exists for that email, a reset link is on its way.' };
+}
+
+export async function updatePassword(input: { password: string; currentPassword?: string } | string) {
+  const request = typeof input === 'string' ? { password: input } : input;
+  if (request.password.length < 8) return actionError('Use a password of at least 8 characters.');
+  try {
+    const supabase = await createServerSupabaseClient();
+    const options = request.currentPassword ? ({ password: request.password, current_password: request.currentPassword } as never) : { password: request.password };
+    const { error } = await supabase.auth.updateUser(options);
+    if (error) return actionError('Password could not be updated.');
+    return { ok: true as const };
+  } catch (error) { return actionFailure('Password could not be updated.', error); }
 }
