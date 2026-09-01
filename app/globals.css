@@ -119,6 +119,10 @@ button { cursor: pointer; }
 .utility-card p { line-height: 1.5; font-size: .84rem; }
 .inline-form { display: flex; gap: 8px; margin: 16px 0 11px; }
 .inline-form input { min-width: 0; flex: 1; border: 1px solid #cbd8c8; border-radius: 12px; padding: 0 12px; background: white; }
+.account-action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.account-action-row .button-quiet, .account-child-form > .button-quiet { min-height: 48px; padding: 0 14px; }
+.account-child-form { align-items: end; margin-top: 16px; }
+.account-child-form .field { margin-bottom: 0; }
 .form-status { margin: 10px 0; color: var(--moss); font-size: .78rem; line-height: 1.45; }
 .citation-card { margin-top: 25px; padding: 17px; border: 1px solid var(--line); border-radius: 18px; background: #fbfaf4; }
 .citation-card p { margin: 7px 0 0; font-size: .82rem; line-height: 1.45; }

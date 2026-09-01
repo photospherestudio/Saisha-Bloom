@@ -63,13 +63,12 @@ export function AccountSettings({ user, children }: { user: { email: string; dis
     <section className="utility-card">
       <div className="eyebrow">Privacy and records</div><h2>Your choices.</h2>
       <p className="muted"><Link className="source-link" href="/consent">Review acknowledgments and guardian attestations</Link></p><p className="muted"><Link className="source-link" href="/account/push">Manage optional push check-ins</Link></p>
-      <form method="post" action="/api/account/export"><div className="field"><label htmlFor="export-password">Current password</label><input id="export-password" name="password" type="password" autoComplete="current-password" required /></div><button className="button button-secondary" type="submit">Download my export</button></form>
-      <button className="button button-quiet" type="button" disabled={isPending} onClick={removeAccount}>Delete my account</button>
+      <form method="post" action="/api/account/export"><div className="field"><label htmlFor="export-password">Current password</label><input id="export-password" name="password" type="password" autoComplete="current-password" required /></div><div className="account-action-row"><button className="button button-secondary" type="submit">Download my export</button><button className="button button-quiet" type="button" disabled={isPending} onClick={removeAccount}>Delete my account</button></div></form>
     </section>
     <section className="utility-card" style={{ gridColumn: '1 / -1' }}>
       <div className="eyebrow">Child profiles you own</div><h2>Edit or permanently delete.</h2>
       <p className="muted">Export before deletion. Permanent deletion cannot be undone.</p>
-      {children.map((child) => <form className="inline-form" action={saveChild} key={child.id} style={{ alignItems: 'end', marginTop: 16 }}>
+      {children.map((child) => <form className="inline-form account-child-form" action={saveChild} key={child.id}>
         <input type="hidden" name="childId" value={child.id} />
         <div className="field"><label htmlFor={`name-${child.id}`}>First name</label><input id={`name-${child.id}`} name="name" defaultValue={child.name} maxLength={120} required /></div>
         <div className="field"><label htmlFor={`dob-${child.id}`}>Date of birth</label><input id={`dob-${child.id}`} name="dob" type="date" defaultValue={child.dob.slice(0, 10)} required /></div>
