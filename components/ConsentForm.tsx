@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { acceptCurrentPolicies, attestChildGuardian } from '@/lib/consent-actions';
 
 type Child = { id: string; name: string; attested: boolean };
@@ -11,18 +12,19 @@ export function ConsentForm({ acceptedTerms, acceptedPrivacy, children }: { acce
   const [privacy, setPrivacy] = useState(acceptedPrivacy);
   const [attested, setAttested] = useState(() => new Set(children.filter((child) => child.attested).map((child) => child.id)));
   const [message, setMessage] = useState('');
+  const router = useRouter();
 
   function savePolicies() {
     startTransition(async () => {
       const result = await acceptCurrentPolicies({ terms, privacy });
-      setMessage(result.ok ? 'Your acknowledgments were saved.' : result.error);
+      if (result.ok) { setMessage('Your acknowledgments were saved.'); if (!children.length) { router.push('/dashboard'); router.refresh(); } } else setMessage(result.error);
     });
   }
 
   function attest(childId: string) {
     startTransition(async () => {
       const result = await attestChildGuardian({ childId, attested: true });
-      if (result.ok) setAttested((current) => new Set(current).add(childId));
+      if (result.ok) { const next = new Set(attested).add(childId); setAttested(next); if (terms && privacy && next.size === children.length) { router.push('/dashboard'); router.refresh(); } }
       setMessage(result.ok ? 'Guardian attestation saved.' : result.error);
     });
   }
@@ -34,4 +36,3 @@ export function ConsentForm({ acceptedTerms, acceptedPrivacy, children }: { acce
     {message ? <p className="form-status" role="status">{message}</p> : null}
   </section>;
 }
-
