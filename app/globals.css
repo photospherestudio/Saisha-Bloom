@@ -109,6 +109,11 @@ button { cursor: pointer; }
 .legal-note { margin-top: 25px; color: #737b70; font-size: .76rem; line-height: 1.55; }
 .utility-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
 .utility-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 30px; align-items: start; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(26, 35, 28, .45); }
+.modal-card { width: min(100%, 460px); padding: 26px; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); box-shadow: 0 24px 70px rgba(26, 35, 28, .24); }
+.modal-card h2 { margin: 0 0 10px; font-family: Georgia, serif; font-size: 1.6rem; }
+.modal-card p { color: #626a60; line-height: 1.5; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 .utility-card { padding: 21px; border: 1px solid var(--line); border-radius: 22px; background: rgba(255,254,250,.75); }
 .utility-card h2 { margin: 7px 0 9px; font-family: Georgia, serif; font-size: 1.35rem; letter-spacing: -.04em; }
 .utility-card p { line-height: 1.5; font-size: .84rem; }

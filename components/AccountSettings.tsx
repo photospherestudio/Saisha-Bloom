@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { deleteAccount, deleteOwnedChild, updateAccountSettings, updateOwnedChild } from '@/lib/account-actions';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 type Child = { id: string; name: string; dob: string; gestationalWeeks: number | null };
 
@@ -10,6 +11,7 @@ export function AccountSettings({ user, children }: { user: { email: string; dis
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState('');
   const [timezone, setTimezone] = useState(user.timezone ?? 'UTC');
+  const [dialog, setDialog] = useState<{ kind: 'child'; childId: string } | { kind: 'account' } | null>(null);
 
   useEffect(() => {
     if (!user.timezone) setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
@@ -29,23 +31,21 @@ export function AccountSettings({ user, children }: { user: { email: string; dis
     });
   }
 
-  function removeChild(childId: string) {
-    const confirmation = window.prompt('This permanently removes the child profile. Export first if needed. Type DELETE to continue.');
-    if (confirmation === null) return;
+  function removeChild(childId: string) { setDialog({ kind: 'child', childId }); }
+  function confirmChild(confirmation: string) {
     startTransition(async () => {
-      const result = await deleteOwnedChild({ childId, confirmation });
+      const result = await deleteOwnedChild({ childId: dialog?.kind === 'child' ? dialog.childId : '', confirmation });
       setMessage(result.ok ? 'Child profile deleted.' : result.error);
+      setDialog(null);
     });
   }
 
-  function removeAccount() {
-    const confirmation = window.prompt('This permanently deletes all profiles you own. Type DELETE MY ACCOUNT to continue.');
-    if (confirmation === null) return;
-    const password = window.prompt('Enter your current password to confirm.');
-    if (password === null) return;
+  function removeAccount() { setDialog({ kind: 'account' }); }
+  function confirmAccount(confirmation: string, password: string) {
     startTransition(async () => {
       const result = await deleteAccount({ password, confirmation });
       setMessage(result.ok ? 'Your account was deleted.' : result.error);
+      setDialog(null);
       if (result.ok) window.location.assign('/');
     });
   }
@@ -79,5 +79,7 @@ export function AccountSettings({ user, children }: { user: { email: string; dis
       {!children.length ? <p className="muted">You do not own any child profiles. Editors can manage their own account but cannot change shared profiles.</p> : null}
     </section>
     {message ? <p className="form-status" role="status">{message}</p> : null}
+    {dialog?.kind === 'child' ? <ConfirmDialog key={`child-${dialog.childId}`} title="Delete child profile?" message="This permanently removes the profile and all of its records. Export first if needed." phrase="DELETE" onCancel={() => setDialog(null)} onConfirm={(phrase) => confirmChild(phrase)} /> : null}
+    {dialog?.kind === 'account' ? <ConfirmDialog title="Delete your account?" message="This permanently deletes every profile you own and your authored contributions." phrase="DELETE MY ACCOUNT" password onCancel={() => setDialog(null)} onConfirm={(phrase, password) => confirmAccount(phrase, password)} /> : null}
   </div>;
 }
