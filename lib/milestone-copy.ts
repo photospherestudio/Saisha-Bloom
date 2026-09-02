@@ -1,6 +1,8 @@
 import reviewedNeutralCopy from '../prisma/seed-data/cdc-neutral-overrides.json' with { type: 'json' };
 
 const neutralReplacements: Array<[RegExp, string]> = [
+  [/\bherself\b/gi, 'themselves'],
+  [/\bhimself\b/gi, 'themselves'],
   [/\bher\b(?=\s+(?:hands|name|toys|fingers|body|cup|food|book|blocks|feet|face|hair|mouth|other|own|spoon|arm|day)\b)/gi, 'their'],
   [/\bher\b/gi, 'them'],
   [/\bhis\b/gi, 'their'],

@@ -26,6 +26,7 @@ test('reviewed copy removes gendered CDC pronouns', () => {
   assert.equal(reviewedMilestoneTitle('She uses her hands to play'), 'Your child uses their hands to play');
   assert.equal(reviewedMilestoneTitle('Puts things in her mouth'), 'Puts things in their mouth');
   assert.equal(reviewedMilestoneTitle('Moves things to her other hand'), 'Moves things to their other hand');
+  assert.equal(reviewedMilestoneTitle('Takes some clothes off by himself, like loose pants or an open jacket'), 'Takes some clothes off by themselves, like loose pants or an open jacket');
 });
 
 test('invalid viewer timezones safely fall back to UTC', () => {

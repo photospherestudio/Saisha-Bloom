@@ -96,6 +96,9 @@ button { cursor: pointer; }
 .status-buttons { display: flex; gap: 5px; align-items: center; }
 .status-button { width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: white; color: var(--dusk); font-size: .67rem; font-weight: 900; }
 .status-button:hover, .status-button.active { color: white; border-color: transparent; }
+.status-button:hover.yes { background: var(--moss); }
+.status-button:hover.almost { background: var(--berry); }
+.status-button:hover.not_yet { background: var(--dusk); }
 .status-button.active.yes { background: var(--moss); }
 .status-button.active.almost { background: var(--berry); }
 .status-button.active.not_yet { background: var(--dusk); }
