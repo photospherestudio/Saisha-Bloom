@@ -6,6 +6,7 @@ import { genericPushPayload } from '../lib/push-payload.ts';
 import { microGuides } from '../lib/micro-guides.ts';
 import { shouldSendDeletionFailureAlert } from '../lib/account-deletion-alert.ts';
 import { publicAnalyticsSurface } from '../lib/public-analytics.ts';
+import { validateGrowthMetrics } from '../lib/growth-validation.ts';
 
 test('weekly progress counts the latest response for each milestone once', () => {
   const progress = summarizeWeeklyProgress([
@@ -53,4 +54,15 @@ test('custom analytics maps only approved public surfaces', () => {
   assert.equal(publicAnalyticsSurface('/child/demo/checklist'), 'demo');
   assert.equal(publicAnalyticsSurface('/dashboard'), null);
   assert.equal(publicAnalyticsSurface('/child/private/checklist'), null);
+});
+
+test('growth measurements require bounded metrics', () => {
+  assert.equal(validateGrowthMetrics(), 'Add height, weight, or both.');
+  const shortHeight = validateGrowthMetrics('29', '');
+  const heavyWeight = validateGrowthMetrics('', '46');
+  assert.ok(shortHeight);
+  assert.ok(heavyWeight);
+  assert.match(shortHeight, /Height must be between 30 and 140/);
+  assert.match(heavyWeight, /Weight must be between 1 and 45/);
+  assert.equal(validateGrowthMetrics('72.5', '8.2'), null);
 });

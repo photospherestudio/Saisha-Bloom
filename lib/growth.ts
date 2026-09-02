@@ -3,11 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { requireChildAccess, requireChildOwner } from '@/lib/queries';
-
-const HEIGHT_MIN_CM = 30;
-const HEIGHT_MAX_CM = 140;
-const WEIGHT_MIN_KG = 1;
-const WEIGHT_MAX_KG = 45;
+import { validateGrowthMetrics } from '@/lib/growth-validation';
 
 export type GrowthPoint = { id: string; measuredAt: string; heightCm: number | null; weightKg: number | null };
 
@@ -25,9 +21,8 @@ export async function addGrowthMeasurement(input: { childId: string; measuredAt:
   const weightKg = weightText ? Number(weightText) : null;
   const measuredAt = new Date(`${input.measuredAt}T12:00:00.000Z`);
   if (!input.measuredAt || Number.isNaN(measuredAt.getTime())) return { ok: false as const, error: 'Choose the date you measured.' };
-  if (heightCm === null && weightKg === null) return { ok: false as const, error: 'Add height, weight, or both.' };
-  if (heightCm !== null && (!Number.isFinite(heightCm) || heightCm < HEIGHT_MIN_CM || heightCm > HEIGHT_MAX_CM)) return { ok: false as const, error: `Height must be between ${HEIGHT_MIN_CM} and ${HEIGHT_MAX_CM} cm.` };
-  if (weightKg !== null && (!Number.isFinite(weightKg) || weightKg < WEIGHT_MIN_KG || weightKg > WEIGHT_MAX_KG)) return { ok: false as const, error: `Weight must be between ${WEIGHT_MIN_KG} and ${WEIGHT_MAX_KG} kg.` };
+  const metricError = validateGrowthMetrics(heightText, weightText);
+  if (metricError) return { ok: false as const, error: metricError };
   try {
     const { child } = await requireChildOwner(input.childId);
     const latestAllowed = new Date();
