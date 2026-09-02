@@ -13,7 +13,10 @@ const neutralReplacements: Array<[RegExp, string]> = [
 
 /** Reviewed name-first copy: raw CDC titles stay untouched in the database. */
 export function reviewedMilestoneTitle(title: string) {
-  const override = reviewedNeutralCopy.overrides[title as keyof typeof reviewedNeutralCopy.overrides];
+  // Normalize source whitespace so reviewed overrides still apply when a CDC
+  // import contains a trailing newline or non-breaking spacing.
+  const normalizedTitle = title.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+  const override = reviewedNeutralCopy.overrides[normalizedTitle as keyof typeof reviewedNeutralCopy.overrides];
   if (override) return override;
-  return neutralReplacements.reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), title);
+  return neutralReplacements.reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), normalizedTitle);
 }
