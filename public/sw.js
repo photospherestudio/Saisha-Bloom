@@ -1,5 +1,6 @@
-const CACHE = 'saisha-bloom-public-v1';
-const PUBLIC_SHELL = ['/', '/offline'];
+const CACHE = 'saisha-bloom-public-v2';
+const DEMO = '/child/demo/checklist';
+const PUBLIC_SHELL = ['/', '/offline', DEMO];
 const PRIVATE = /^(\/dashboard|\/child\/|\/account|\/api\/|\/onboarding|\/invite|\/consent|\/auth\/)/;
 
 self.addEventListener('install', (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PUBLIC_SHELL))));
@@ -7,8 +8,8 @@ self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim(
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
-  if (request.method !== 'GET' || url.origin !== self.location.origin || PRIVATE.test(url.pathname) || url.search) return;
-  if (url.pathname === '/' || url.pathname === '/offline' || url.pathname.startsWith('/illustrations/') || url.pathname.startsWith('/icons/')) {
+  if (request.method !== 'GET' || url.origin !== self.location.origin || (PRIVATE.test(url.pathname) && url.pathname !== DEMO) || url.search) return;
+  if (url.pathname === '/' || url.pathname === '/offline' || url.pathname === DEMO || url.pathname.startsWith('/illustrations/') || url.pathname.startsWith('/icons/')) {
     event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => { const copy = response.clone(); void caches.open(CACHE).then((cache) => cache.put(request, copy)); return response; }).catch(() => caches.match('/offline'))));
   }
 });

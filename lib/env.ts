@@ -18,6 +18,9 @@ export function validateEnvironment() {
   const supabaseSecret = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseSecret || isPlaceholder(supabaseSecret)) missing.push('SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY');
   if (process.env.CRON_SECRET && process.env.CRON_SECRET.length < 32) missing.push('CRON_SECRET (at least 32 characters)');
+  const vapidNames = ['NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'] as const;
+  const configuredVapid = vapidNames.filter((name) => process.env[name]);
+  if (configuredVapid.length > 0 && configuredVapid.length < vapidNames.length) missing.push('all VAPID settings together');
 
   const databaseUrl = process.env.DATABASE_URL;
   if (databaseUrl && process.env.NODE_ENV === 'production') {

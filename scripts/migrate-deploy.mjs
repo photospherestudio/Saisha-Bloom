@@ -24,7 +24,11 @@ try {
   deploy();
 } catch (error) {
   const output = `${error?.stdout ?? ''}\n${error?.stderr ?? ''}`;
-  if (!output.includes('P3005')) throw error;
+  if (!output.includes('P3005') || process.env.ALLOW_PRISMA_BASELINE !== 'true') throw error;
+  const schema = execFileSync(prisma, ['db', 'pull', '--print'], { encoding: 'utf8' });
+  for (const model of ['User', 'Child', 'Milestone', 'MilestoneResponse', 'AuthRateLimit']) {
+    if (!schema.includes(`model ${model} {`)) throw new Error(`Refusing to baseline: expected model ${model} was not found.`);
+  }
   for (const migration of existingMigrations) execFileSync(prisma, ['migrate', 'resolve', '--applied', migration], { stdio: 'inherit' });
   deploy();
 }

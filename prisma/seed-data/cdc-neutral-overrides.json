@@ -1,0 +1,11 @@
+{
+  "reviewScope": "Exact neutral grammar substitutions only; source milestone wording and meaning are unchanged.",
+  "reviewedAt": "2026-09-02T00:00:00.000Z",
+  "overrides": {
+    "She uses her hands to play": "Your child uses their hands to play",
+    "Puts things in her mouth": "Puts things in their mouth",
+    "Puts things in her mouth to explore them": "Puts things in their mouth to explore them",
+    "Moves things to her other hand": "Moves things to their other hand",
+    "Moves things from one hand to her other hand": "Moves things from one hand to their other hand"
+  }
+}

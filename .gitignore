@@ -16,3 +16,4 @@ skills-lock.json
 !.env.example
 /.openai/
 /docs/SAISHA_BLOOM_PRD_MASTER.md
+/prisma/seed-data/cdc-milestones-candidate.json

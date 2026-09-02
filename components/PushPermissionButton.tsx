@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { subscribePush, unsubscribePush } from '@/lib/push-actions';
 
 export function PushPermissionButton() {
   const [message, setMessage] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    void navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription()).then((subscription) => setEnabled(Boolean(subscription)));
+  }, []);
   async function enable() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) { setMessage('Push notifications are not available on this device.'); return; }
     const permission = await Notification.requestPermission();

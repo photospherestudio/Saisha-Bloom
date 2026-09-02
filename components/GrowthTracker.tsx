@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { addGrowthMeasurement, type GrowthPoint } from '@/lib/growth';
+import { addGrowthMeasurement, deleteGrowthMeasurement, type GrowthPoint } from '@/lib/growth';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));
@@ -21,6 +22,7 @@ export function GrowthTracker({ childId, relationship, measurements, legacyHeigh
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState('');
+  const [deleting, setDeleting] = useState<GrowthPoint | null>(null);
   const height = measurements.flatMap((point) => point.heightCm === null ? [] : [{ date: point.measuredAt, value: point.heightCm }]);
   const weight = measurements.flatMap((point) => point.weightKg === null ? [] : [{ date: point.measuredAt, value: point.weightKg }]);
   const maxDate = new Date().toISOString().slice(0, 10);
@@ -35,5 +37,24 @@ export function GrowthTracker({ childId, relationship, measurements, legacyHeigh
     });
   }
 
-  return <section className="panel growth-tracker"><div className="eyebrow">Longitudinal growth</div><div className="panel-head"><div><h2>Measurements over time</h2><p className="muted">A simple record, not a percentile or diagnosis.</p></div></div>{measurements.length ? <div className="growth-measurements">{measurements.map((point) => <div key={point.id}><strong>{dateLabel(point.measuredAt)}</strong><span>{point.heightCm !== null ? `${point.heightCm.toFixed(1)} cm` : null}{point.heightCm !== null && point.weightKg !== null ? ' · ' : null}{point.weightKg !== null ? `${point.weightKg.toFixed(1)} kg` : null}</span></div>)}</div> : <p className="muted">Add a dated height or weight when it is useful to your family.</p>}<div className="growth-trends"><Trend label="Height" unit="cm" values={height} /><Trend label="Weight" unit="kg" values={weight} /></div>{legacyHeightCm || legacyWeightKg ? <p className="legal-note">Earlier onboarding entry{legacyHeightCm && legacyWeightKg ? 'ies' : 'y'} {legacyHeightCm ? `${legacyHeightCm.toFixed(1)} cm` : ''}{legacyHeightCm && legacyWeightKg ? ' and ' : ''}{legacyWeightKg ? `${legacyWeightKg.toFixed(1)} kg` : ''} ha{legacyHeightCm && legacyWeightKg ? 've' : 's'} no measurement date, so {legacyHeightCm && legacyWeightKg ? 'they are' : 'it is'} not plotted.</p> : null}{relationship === 'owner' ? <form className="growth-form" action={submit}><div className="field"><label htmlFor="measuredAt">Measurement date</label><input id="measuredAt" name="measuredAt" type="date" max={maxDate} required /></div><div className="growth-form-metrics"><div className="field"><label htmlFor="heightCm">Height (cm)</label><input id="heightCm" name="heightCm" type="number" min="30" max="140" step="0.1" /></div><div className="field"><label htmlFor="weightKg">Weight (kg)</label><input id="weightKg" name="weightKg" type="number" min="1" max="45" step="0.1" /></div></div><button className="button button-secondary" disabled={pending}>{pending ? 'Saving…' : 'Save measurement'}</button>{message ? <p className="form-status" aria-live="polite">{message}</p> : null}</form> : <p className="legal-note">Only this child profile’s owner can add or manage growth entries.</p>}</section>;
+  function removeMeasurement() {
+    if (!deleting) return;
+    startTransition(async () => {
+      const result = await deleteGrowthMeasurement(deleting.id);
+      if (!result.ok) return setMessage(result.error);
+      setDeleting(null);
+      setMessage('Measurement deleted.');
+      router.refresh();
+    });
+  }
+
+  return <section className="panel growth-tracker">
+    <div className="eyebrow">Longitudinal growth</div>
+    <div className="panel-head"><div><h2>Measurements over time</h2><p className="muted">A simple record, not a percentile or diagnosis.</p></div></div>
+    {measurements.length ? <div className="growth-measurements">{measurements.map((point) => <div key={point.id}><strong>{dateLabel(point.measuredAt)}</strong><span>{point.heightCm !== null ? `${point.heightCm.toFixed(1)} cm` : null}{point.heightCm !== null && point.weightKg !== null ? ' · ' : null}{point.weightKg !== null ? `${point.weightKg.toFixed(1)} kg` : null}</span>{relationship === 'owner' ? <button className="button-link" type="button" disabled={pending} onClick={() => setDeleting(point)}>Delete</button> : null}</div>)}</div> : <p className="muted">Add a dated height or weight when it is useful to your family.</p>}
+    <div className="growth-trends"><Trend label="Height" unit="cm" values={height} /><Trend label="Weight" unit="kg" values={weight} /></div>
+    {legacyHeightCm || legacyWeightKg ? <p className="legal-note">Earlier onboarding entry{legacyHeightCm && legacyWeightKg ? 'ies' : 'y'} {legacyHeightCm ? `${legacyHeightCm.toFixed(1)} cm` : ''}{legacyHeightCm && legacyWeightKg ? ' and ' : ''}{legacyWeightKg ? `${legacyWeightKg.toFixed(1)} kg` : ''} ha{legacyHeightCm && legacyWeightKg ? 've' : 's'} no measurement date, so {legacyHeightCm && legacyWeightKg ? 'they are' : 'it is'} not plotted.</p> : null}
+    {relationship === 'owner' ? <form className="growth-form" action={submit}><div className="field"><label htmlFor="measuredAt">Measurement date</label><input id="measuredAt" name="measuredAt" type="date" max={maxDate} required /></div><div className="growth-form-metrics"><div className="field"><label htmlFor="heightCm">Height (cm)</label><input id="heightCm" name="heightCm" type="number" min="30" max="140" step="0.1" /></div><div className="field"><label htmlFor="weightKg">Weight (kg)</label><input id="weightKg" name="weightKg" type="number" min="1" max="45" step="0.1" /></div></div><button className="button button-secondary" disabled={pending}>{pending ? 'Saving…' : 'Save measurement'}</button>{message ? <p className="form-status" aria-live="polite">{message}</p> : null}</form> : <p className="legal-note">Only this child profile’s owner can add or manage growth entries.</p>}
+    {deleting ? <ConfirmDialog title="Delete measurement?" message={`${dateLabel(deleting.measuredAt)} will be permanently removed.`} onCancel={() => setDeleting(null)} onConfirm={removeMeasurement} /> : null}
+  </section>;
 }

@@ -41,3 +41,17 @@ export async function addGrowthMeasurement(input: { childId: string; measuredAt:
     return { ok: false as const, error: 'Only the child-profile owner can add growth entries.' };
   }
 }
+
+export async function deleteGrowthMeasurement(measurementId: string) {
+  try {
+    const measurement = await db.growthMeasurement.findUnique({ where: { id: measurementId }, select: { id: true, childId: true } });
+    if (!measurement) return { ok: true as const };
+    await requireChildOwner(measurement.childId);
+    await db.growthMeasurement.delete({ where: { id: measurement.id } });
+    revalidatePath('/dashboard');
+    revalidatePath(`/dashboard?childId=${measurement.childId}`);
+    return { ok: true as const };
+  } catch {
+    return { ok: false as const, error: 'Only the child-profile owner can delete growth entries.' };
+  }
+}

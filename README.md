@@ -114,7 +114,7 @@ Then open:
 - `http://localhost:3000` for the landing page
 - `http://localhost:3000/child/demo/checklist` for the public demo tracker
 
-Copy `.env.example` to `.env` and set `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and the server-only `SUPABASE_SECRET_KEY`. For email invites and reminders, also set `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `REMINDER_FROM_EMAIL`, and `CRON_SECRET`.
+Copy `.env.example` to `.env` and set `DATABASE_URL`, the direct non-pooler `DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and the server-only `SUPABASE_SECRET_KEY`. For email invites, reminders, and deletion-failure alerts, also set `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `REMINDER_FROM_EMAIL`, `PRIVACY_CONTACT_EMAIL`, and a 32+ character `CRON_SECRET`. Vercel calls `/api/reminders/daily` once per day using that secret. To enable Web Push, set `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` together. Public custom analytics remain off unless both `NEXT_PUBLIC_PRIVACY_COPY_APPROVED` and `NEXT_PUBLIC_ANALYTICS_EVENTS_ENABLED` are explicitly `true`.
 
 Local Supabase uses ports `54421–54429`. Keep the `milestone-memories` bucket private. Use `npm run db:migrate` for deployed databases; do not use `db:push` in production.
 
@@ -130,7 +130,7 @@ npm run build
 
 Milestone guideposts come from CDC data. Reviewed activity and care-seeking guidance is stored separately in `prisma/seed-data/guidance.json`, with references to AAP, ZERO TO THREE, NHS Start for Life, Raising Children Network, and India’s RBSK.
 
-The supplied CDC scraper writes reviewed output to `prisma/seed-data/cdc-milestones-raw.json`. WHO data sits beside it for seed-only motor reference.
+The CDC scraper writes only `prisma/seed-data/cdc-milestones-candidate.json`, which is ignored by Git. Run `npm run content:cdc:diff`, review every change, then explicitly approve with `npm run content:cdc:approve -- --approve --reviewer="Name" --reviewed-at=YYYY-MM-DD`. Approved content replaces `cdc-milestones-raw.json` and records a review manifest. Exact reviewed neutral wording lives separately in `cdc-neutral-overrides.json`. WHO motor windows and conservative CDC checkpoint intervals live in `emergence-windows.json` and are upserted by `npm run db:seed`.
 
 ## Boundaries that matter
 

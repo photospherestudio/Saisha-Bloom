@@ -7,7 +7,7 @@
 //   npm install cheerio
 //   node scrape-cdc-milestones.mjs
 //
-// Output: cdc-milestones-raw.json
+// Output: cdc-milestones-candidate.json (never overwrites approved content)
 //
 // IMPORTANT: Review the output manually before using it in production.
 // This is a heuristic parser based on CDC's current markup (verified
@@ -44,7 +44,7 @@ const DOMAIN_PREFIXES = [
 ];
 
 const USER_AGENT =
-  'PhotosphereMilestoneBot/1.0 (+contact: you@yourdomain.com; ' +
+  'PhotosphereMilestoneBot/1.0 (+contact: admin.nemesis@gmail.com; ' +
   'building parent milestone app, using CDC public-domain content, ' +
   'polite/rate-limited crawl)';
 
@@ -125,7 +125,7 @@ async function scrapeAll() {
     await new Promise((r) => setTimeout(r, 1500));
   }
 
-  const outputPath = path.join('prisma', 'seed-data', 'cdc-milestones-raw.json');
+  const outputPath = path.join('prisma', 'seed-data', 'cdc-milestones-candidate.json');
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(
     outputPath,
@@ -133,7 +133,7 @@ async function scrapeAll() {
     'utf-8'
   );
   console.info(`\nDone. ${all.length} total milestones written to ${outputPath}`);
-  console.info('Next: manually review the JSON before seeding your DB.');
+  console.info('Next: run npm run content:cdc:diff, review every change, then use the explicit approval command.');
 }
 
 scrapeAll().catch(() => {

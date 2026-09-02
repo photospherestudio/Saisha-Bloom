@@ -1,6 +1,6 @@
 import { db } from './db';
 import { childAge, reminderCheckpointForAge } from './age';
-import { sendGenericPush } from './push-actions';
+import { sendGenericPush } from './push-delivery';
 
 type ResendEmail = { to: string; subject: string; html: string; idempotencyKey: string };
 

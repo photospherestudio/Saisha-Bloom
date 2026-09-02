@@ -1,0 +1,20 @@
+{
+  "reviewedAt": "2026-09-02T00:00:00.000Z",
+  "cdc": {
+    "checkpoints": [2, 4, 6, 9, 12, 15, 18, 24, 30, 36, 48, 60],
+    "source": "CDC Learn the Signs. Act Early. checkpoint interval; evidence context: Zubler et al., Pediatrics (2022)",
+    "sourceUrl": "https://doi.org/10.1542/peds.2021-052138"
+  },
+  "who": {
+    "source": "WHO Multicentre Growth Reference Study Group, Motor Development Study: windows of achievement (1st–99th percentile)",
+    "sourceUrl": "https://doi.org/10.1111/j.1651-2227.2006.tb02379.x",
+    "milestones": [
+      { "name": "Sitting without support", "minMonths": 3.8, "maxMonths": 9.2 },
+      { "name": "Standing with assistance", "minMonths": 4.8, "maxMonths": 11.4 },
+      { "name": "Hands-and-knees crawling", "minMonths": 5.2, "maxMonths": 13.5 },
+      { "name": "Walking with assistance", "minMonths": 5.9, "maxMonths": 13.7 },
+      { "name": "Standing alone", "minMonths": 6.9, "maxMonths": 16.9 },
+      { "name": "Walking alone", "minMonths": 8.2, "maxMonths": 17.6 }
+    ]
+  }
+}

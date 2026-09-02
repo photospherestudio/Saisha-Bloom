@@ -8,6 +8,8 @@ import { createAdminClient, hasSupabaseAdminConfig } from './supabase/admin';
 import { createClient as createServerSupabaseClient } from './supabase/server';
 import { requireChildOwner } from './queries';
 import { logServerError } from './http';
+import { sendResendEmail } from './reminders';
+import { shouldSendDeletionFailureAlert } from './account-deletion-alert';
 
 const BUCKET = process.env.SUPABASE_IMAGE_BUCKET ?? 'milestone-memories';
 const DAYS_30 = 30 * 24 * 60 * 60 * 1000;
@@ -54,7 +56,11 @@ async function processAccountDeletion(userId: string) {
     return true;
   } catch (error) {
     const ref = createHash('sha256').update(String(error)).digest('hex').slice(0, 24);
-    await db.user.update({ where: { id: userId }, data: { deletionErrorRef: ref, deletionAttempts: { increment: 1 } } }).catch(() => undefined);
+    const failedUser = await db.user.update({ where: { id: userId }, data: { deletionErrorRef: ref, deletionAttempts: { increment: 1 } }, select: { deletionAttempts: true, deletionAlertSentAt: true } }).catch(() => null);
+    if (failedUser && !failedUser.deletionAlertSentAt && shouldSendDeletionFailureAlert(failedUser.deletionAttempts)) {
+      const alert = await sendResendEmail({ to: process.env.PRIVACY_CONTACT_EMAIL ?? 'admin.nemesis@gmail.com', subject: 'Saisha Bloom account deletion needs review', html: `<p>An account deletion has failed ${failedUser.deletionAttempts} times and needs manual review.</p><p>Reference: ${ref}</p>`, idempotencyKey: `account-deletion-alert-${createHash('sha256').update(userId).digest('hex').slice(0, 20)}` });
+      if (alert.ok) await db.user.updateMany({ where: { id: userId, deletionAlertSentAt: null }, data: { deletionAlertSentAt: new Date() } }).catch(() => undefined);
+    }
     logServerError(ref, error);
     return false;
   }

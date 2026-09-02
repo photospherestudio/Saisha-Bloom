@@ -18,6 +18,7 @@ model User {
   deletionRequestedAt DateTime?
   deletionErrorRef    String?
   deletionAttempts    Int                  @default(0)
+  deletionAlertSentAt DateTime?
   createdAt           DateTime             @default(now())
   children            Child[]
   memberships         ChildMember[]

@@ -1,4 +1,4 @@
-import * as archiverModule from 'archiver';
+import { ZipArchive } from 'archiver';
 import { PassThrough, Readable } from 'node:stream';
 import { getCurrentAppUser, hasSupabaseConfig } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -6,8 +6,6 @@ import { createAdminClient, hasSupabaseAdminConfig } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server';
 import { siteUrl } from '@/lib/reminders';
 import { jsonError } from '@/lib/http';
-
-const createArchive = ((archiverModule as unknown as { default?: unknown }).default ?? archiverModule) as (format: string, options?: object) => { pipe: (stream: NodeJS.WritableStream) => void; append: (data: string | Buffer, options: { name: string }) => void; finalize: () => Promise<void> };
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
   const children = await db.child.findMany({ where: { OR: [{ userId: user.id }, { members: { some: { userId: user.id, role: 'editor' } } }] }, include: { responses: { where: { OR: [{ child: { userId: user.id } }, { userId: user.id }] }, orderBy: { createdAt: 'asc' }, include: { milestone: { select: { id: true, title: true, domain: true, source: true, sourceUrl: true } }, author: { select: { id: true, email: true, displayName: true } }, media: { orderBy: { createdAt: 'asc' } } } }, growthMeasurements: { orderBy: { measuredAt: 'asc' } } } });
   const ownerChildren = children.filter((child) => child.userId === user.id);
   const policies = await db.policyAcceptance.findMany({ where: { userId: user.id }, orderBy: { acceptedAt: 'asc' }, select: { document: true, version: true, acceptedAt: true } });
-  const archive = createArchive('zip', { zlib: { level: 6 } });
+  const archive = new ZipArchive({ zlib: { level: 6 } });
   const output = new PassThrough();
   archive.pipe(output);
   const manifest = { exportVersion: '1.0', generatedAt: new Date().toISOString(), account: { id: user.id, email: user.email, displayName: user.displayName }, policies: policies.map((policy) => ({ ...policy, acceptedAt: policy.acceptedAt.toISOString() })), scope: ownerChildren.length === children.length ? 'owner' : 'editor', children: children.map((child) => ({ id: child.id, name: child.name, dob: child.dob.toISOString(), relationship: child.userId === user.id ? 'owner' : 'editor', measurements: child.userId === user.id ? child.growthMeasurements : [] })), observations: [] as unknown[] };
@@ -49,13 +47,18 @@ export async function POST(request: Request) {
   const bucket = process.env.SUPABASE_IMAGE_BUCKET ?? 'milestone-memories';
   for (const child of children) {
     for (const response of child.responses) {
-      const observation = { id: response.id, childId: child.id, milestone: response.milestone, status: response.status, note: response.note, observedAt: response.createdAt.toISOString(), updatedAt: response.updatedAt.toISOString(), author: response.userId === user.id ? response.author : child.userId === user.id ? response.author : null, media: response.media.map((item) => ({ id: item.id, mimeType: item.mimeType, sizeBytes: item.sizeBytes, path: `children/${child.id}/observations/${response.id}/${item.id}.${extension(item.mimeType)}` })) };
-      manifest.observations.push(observation);
+      const media: Array<{ id: string; mimeType: string; sizeBytes: number; path: string }> = [];
       for (const item of response.media) {
         const downloaded = await admin.storage.from(bucket).download(item.objectPath);
-        if (downloaded.error || !downloaded.data) continue;
-        archive.append(Buffer.from(await downloaded.data.arrayBuffer()), { name: `children/${child.id}/observations/${response.id}/${item.id}.${extension(item.mimeType)}` });
+        if (downloaded.error || !downloaded.data) {
+          void archive.abort();
+          return jsonError('Export could not include every photo. Please try again.', 502);
+        }
+        const path = `children/${child.id}/observations/${response.id}/${item.id}.${extension(item.mimeType)}`;
+        archive.append(Buffer.from(await downloaded.data.arrayBuffer()), { name: path });
+        media.push({ id: item.id, mimeType: item.mimeType, sizeBytes: item.sizeBytes, path });
       }
+      manifest.observations.push({ id: response.id, childId: child.id, milestone: response.milestone, status: response.status, note: response.note, observedAt: response.createdAt.toISOString(), updatedAt: response.updatedAt.toISOString(), author: response.userId === user.id ? response.author : child.userId === user.id ? response.author : null, media });
     }
   }
   archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });

@@ -7,6 +7,7 @@ import { requireChildAccess } from './queries';
 import { createAdminClient, hasSupabaseAdminConfig } from './supabase/admin';
 import { logServerError, newCorrelationId } from './http';
 import type { MilestoneStatus } from './types';
+import { sendCaregiverObservationPush } from './push-delivery';
 
 const BUCKET = process.env.SUPABASE_IMAGE_BUCKET ?? 'milestone-memories';
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -100,6 +101,7 @@ export async function finalizeObservation(input: { childId: string; responseId: 
       revalidatePath(`/child/${input.childId}/checklist`);
       revalidatePath(`/child/${input.childId}/timeline`);
       revalidatePath('/dashboard');
+      await sendCaregiverObservationPush(response.childId, user.id).catch(() => undefined);
       return { ok: true as const, responseId: response.id };
     } catch (innerError) {
       if ((innerError as { code?: string }).code === 'P2002') {
