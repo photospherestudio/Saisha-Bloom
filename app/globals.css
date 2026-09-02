@@ -220,6 +220,7 @@ button { cursor: pointer; }
 .field input:focus { border-color: var(--moss); outline: 3px solid rgba(53,81,62,.15); }
 .field select:focus { border-color: var(--moss); outline: 3px solid rgba(53,81,62,.15); }
 .form-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 25px; }
+.form-foot > .button-primary { flex: 0 0 auto; min-width: 90px; white-space: nowrap; }
 .form-error { margin: 15px 0 0; color: var(--dusk); font-size: .85rem; }
 
 .recommendation { margin-top: 23px; padding: 22px; border-radius: 22px; background: #fceaf0; border: 1px solid #f1ccda; }
@@ -287,6 +288,8 @@ button { cursor: pointer; }
   .shell { width: min(100% - 30px, 620px); }
   .hero { display: block; min-height: auto; padding-top: 35px; }
   .hero-art { min-height: 350px; margin: 45px 20px 0; }
+  .form-foot { align-items: flex-start; }
+  .form-foot > span { display: flex; flex-wrap: wrap; gap: 4px; }
   .art-card { inset: 15px 3% 0 12%; }
   .page-heading { display: block; padding-top: 35px; }
   .page-heading .button { margin-top: 20px; }
